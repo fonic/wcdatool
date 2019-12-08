@@ -1,0 +1,90 @@
+
+                                 Object Hints
+==============================================================================
+
+
+  Object 1:
+
+    # automatically generated (mk2_generate_hints.sh)
+    1) offset = 000104baH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    2) offset = 00010c0bH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    3) offset = 00010c27H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    4) offset = 00010d0cH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    5) offset = 00010d8cH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    6) offset = 00010da8H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    7) offset = 00010e27H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    8) offset = 00010edfH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    9) offset = 00010f13H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    10) offset = 00010fe2H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    11) offset = 00011083H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    12) offset = 000110d3H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    13) offset = 000111dcH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    14) offset = 000111f8H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    15) offset = 00011214H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    16) offset = 00011230H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    17) offset = 0001124cH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    18) offset = 000112ccH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    19) offset = 000114eaH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    20) offset = 000115c4H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    21) offset = 00011681H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    22) offset = 000116d2H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    23) offset = 00011730H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    24) offset = 000117b2H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    25) offset = 00011825H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    26) offset = 00011841H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    27) offset = 00011891H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    28) offset = 000118cdH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    29) offset = 00011901H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    30) offset = 000119ddH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    31) offset = 000119f9H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    32) offset = 00011a15H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    33) offset = 00011a7cH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    34) offset = 00011ac2H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    35) offset = 00011c12H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    36) offset = 00011cd2H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    37) offset = 00011d3eH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    38) offset = 00011d73H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    39) offset = 00011fabH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    40) offset = 00011fc7H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    41) offset = 000120d8H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    42) offset = 000120f4H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    43) offset = 0003a045H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    44) offset = 0003a152H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    45) offset = 0003a1afH, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    46) offset = 0003a228H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    47) offset = 0003a988H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    48) offset = 0003a9a4H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+    49) offset = 0003aa78H, size = 00000008H, type = data, subtype = dwords, comment = REACT_JUMP_TABLE
+
+    # manually added
+    100) offset = 0001780fH, size = 00000702H, type = data, subtype = bytes, comment = Not sure yet
+    101) offset = 0001f744H, size = 000004c4H, type = data, subtype = dwords, comment = Module 'stance.mk2'
+    102) offset = 00024e14H, size = 00008e48H, type = data, subtype = bytes, comment = Module 'allpals.mk2'
+    103) offset = 0003f456H, size = 00000025H, type = data, subtype = string, comment = String
+    104) offset = 0003f4f2H, size = 00000025H, type = data, subtype = string, comment = String
+    105) offset = 0003fe03H, size = 00000030H, type = data, subtype = dwords, comment = Jump table (see offset 0x3fe55)
+
+    199) offset = 0003cd6eH, size = 00000076H, type = data, subtype = string, comment = Watcom copyright notice
+
+
+  Object 2:
+#    0) offset = 00000000H, size = FFFFFFFFH, type = data, subtype = auto, comment = Strings (auto-detection)
+    1) offset = 00000004H, size = 00000240H, type = data, subtype = strings, comment = Strings
+    2) offset = 00000244H, size = 00000940H, type = data, subtype = strings, comment = Strings
+    3) offset = 00000dbcH, size = 00000009H, type = data, subtype = string, comment = String
+    4) offset = 0000687cH, size = 00003264H, type = data, subtype = auto, comment = Strings (auto-detection)
+    5) offset = 00013ac8H, size = 00000023H, type = data, subtype = bytes, comment = Sub-addressed string
+
+
+
+
+
+
+
+
+
+
+
+
+
+
