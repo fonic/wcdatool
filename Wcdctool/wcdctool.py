@@ -5,7 +5,7 @@
 #                                                                         -
 #  Watcom Decompilation Tool (wcdctool)                                   -
 #                                                                         -
-#  Created by Fonic (https://github.com/fonic)                            -
+#  Created by Maxxim (https://github.com/fonic)                           -
 #  Date: 11/25/19 - 11/25/19                                              -
 #  Date: 06/20/19 - 07/30/19                                              -
 #                                                                         -
@@ -32,6 +32,8 @@
 #
 # - analyze 'cs:0x...' references same as 'ds:0x...' references; difference is that variables have to be added to _code_ object and also be named
 #   right after analysis
+#
+# - probably rename type 'function' to 'subroutine' -> more general; search & replace for '"function"'
 #
 
 
@@ -1370,7 +1372,7 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 					print_warn("Continuing disassembly at offset 0x%x..." % start_offset)
 					while_again = True
 				else:
-					print_warn("Reached end of object data at offset 0x%x" % start_offset)
+					print_warn("Reached end of object data at offset 0x%x." % start_offset)
 				break # break for-loop -> next iteration of 'while (while_again == True)' loop
 
 			# Detect bad code: if ret or jmp is followed by zero(s), find first non-zero byte after
@@ -1394,7 +1396,7 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 						print_warn("Continuing disassembly at offset 0x%x..." % start_offset)
 						while_again = True
 					else:
-						print_warn("Reached end of object data at offset 0x%x" % start_offset)
+						print_warn("Reached end of object data at offset 0x%x." % start_offset)
 					break # break for-loop -> go to start of while-loop
 
 	# Remove temporary file
@@ -2039,12 +2041,13 @@ def disassemble_objects(objdump_exec, wdump, outfile_template):
 	disasm = OrderedDict([("objects", []), ("modules", []), ("globals", [])])
 
 	# Determine automatic data object (i.e. object to which 'ds:0x...' references implicitly point to)
+	# TODO: needs additional safety checks: check if object exists and if object is of type 'data'
 	ado = None
 	for section in wdump:
 		if (section.startswith("linear exe header")):
-			print(section)
 			if ("object # for automatic data object" in wdump[section]["data"]):
 				ado = wdump[section]["data"]["object # for automatic data object"]
+				print_normal("Identified automatic data object: object %d" % ado)
 
 	# Preprocess objects: accumulate data over pages/segments, determine size, determine type, add hints, add flag for automatic data object, sort
 	if ("object table" in wdump):
