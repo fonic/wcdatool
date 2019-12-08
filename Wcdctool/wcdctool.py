@@ -5,7 +5,7 @@
 #                                                                         -
 #  Watcom Decompilation Tool (wcdctool)                                   -
 #                                                                         -
-#  Created by Maxxim (https://github.com/fonic)                           -
+#  Created by Fonic (https://github.com/fonic)                            -
 #  Date: 11/25/19 - 11/25/19                                              -
 #  Date: 06/20/19 - 07/30/19                                              -
 #                                                                         -
