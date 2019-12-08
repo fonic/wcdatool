@@ -43,6 +43,7 @@ There are multiple ways to use *wcdctool*, but this should get you started:
    # ./1_build.sh
    # ./2_install_linux.sh /opt/openwatcom /opt/bin/openwatcom
    ```
+   **NOTE:** I created those scripts myself for convenience, they are not part of *Open Watcom*.
 
 4. Copy application executables (.exe/.EXE) to `wcdctool/Executables`, e.g. for *Mortal Kombat*:
    ```
@@ -58,7 +59,7 @@ There are multiple ways to use *wcdctool*, but this should get you started:
    # cd wcdctool/Executables
    # ./x_process_all.sh
    ```
-   **NOTE:** for the executables listed in 4., this will take ~ 5 min. and generate ~ 1 GB worth of data
+   **NOTE:** for the executables listed in 4., this will take ~ 5 min. and generate ~ 1 GB worth of data.
 
 6. Have a look at the results in `wcdctool/Output`.
 
