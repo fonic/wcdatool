@@ -10,7 +10,7 @@
 #  openwatcom/openwatcom-9999.ebuild                                      -
 #  (/usr/local/portage/dev-lang/openwatcom/openwatcom-9999.ebuild)        -
 #                                                                         -
-#  Based on OpenWatcom documentation:                                     -
+#  Based on Open Watcom documentation:                                    -
 #  open-watcom-v2/rel/readme.txt                                          -
 #                                                                         -
 # -------------------------------------------------------------------------
