@@ -13,7 +13,7 @@ function is_command_available() {
 	return $?
 }
 
-# Check if DOSEMU or DOSBox is available (NOTE: OpenWatcom defaults to DOSEMU)
+# Check if DOSEMU or DOSBox is available (OpenWatcom defaults to DOSEMU)
 if is_command_available "dosemu"; then
 	true
 elif is_command_available "dosbox"; then
@@ -21,6 +21,12 @@ elif is_command_available "dosbox"; then
 else
 	echo -e "\e[1;33mOpenWatcom requires either DOSEMU or DOSBox to build.\e[0m"
 	exit 1
+fi
+
+# Check if pwd contains space(s)
+re="[[:space:]]+"
+if [[ "${PWD}" =~ ${re} ]]; then
+	echo -e "\e[1;33mPath to OpenWatcom contains space(s). Build is likely to fail.\e[0m"
 fi
 
 # Perform build
