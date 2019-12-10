@@ -1058,7 +1058,8 @@ def generate_define_byte(offset, value, comment=False):
 			char = chr(value)
 		else:
 			char = ""
-		result += "    ; dec: %3d, chr: '%s'" % (value, char)
+		if (value > 0):
+			result += "    ; dec: %3d, chr: '%s'" % (value, char)
 	return result
 
 
