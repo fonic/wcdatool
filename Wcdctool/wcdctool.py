@@ -1787,6 +1787,8 @@ def disassemble_data_object(object, modules, globals):
 	hint_index = 0
 	struct_index = 0
 	offset = 0
+	type_to_size = { "qwords": 8, "fwords": 6, "dwords": 4, "words": 2, "bytes": 1 }
+	size_to_type = { 8: "qwords", 6: "fwords", 4: "dwords", 2: "words", 1: "bytes" }
 	while (offset < object["size"]):
 
 		# Check for and report missed hints
@@ -1821,8 +1823,7 @@ def disassemble_data_object(object, modules, globals):
 			print_warn("Missed structure item '%s', type '%s' at offset 0x%x (current offset 0x%x)" % (item["name"], item["type"], item["offset"], offset))
 
 		# Process structure item for current offset
-		# TODO: shouldn't this be a while loop due to the continues? -> yes, but last continue poses a problem as that one continues outer while-loop
-		# TODO: check if there are other variables within data size range; use loop and decrease data size until no other variable is affected
+		# TODO: shouldn't this be a while loop due to the continues? -> yes, but last continue poses a problem as that one needs to continue outer while-loop
 		if (struct_index < len(structure) and structure[struct_index]["offset"] == offset):
 			item = structure[struct_index]
 			struct_index += 1
@@ -1830,29 +1831,40 @@ def disassemble_data_object(object, modules, globals):
 				continue
 			if (not "sizes" in item):
 				continue
-			if "QWORD" in item["sizes"]:
-				data_size = 8
+
+			# Determine data type/size (choose highest if multiple sizes)
+			if ("QWORD" in item["sizes"]):
 				data_type = "qwords"
-			elif "FWORD" in item["sizes"]:
-				data_size = 6
+			elif ("FWORD" in item["sizes"]):
 				data_type = "fwords"
-			elif "DWORD" in item["sizes"]:
-				data_size = 4
+			elif ("DWORD" in item["sizes"]):
 				data_type = "dwords"
-			elif "WORD" in item["sizes"]:
-				data_size = 2
+			elif ("WORD" in item["sizes"]):
 				data_type = "words"
-			elif "BYTE" in item["sizes"]:
-				data_size = 1
+			elif ("BYTE" in item["sizes"]):
 				data_type = "bytes"
 			else:
 				print_error("[should-never-occur] Unable to determine data type/size: %s" % str.join(", ", item["sizes"]))
-				data_size = 1
 				data_type = "bytes"
-			while (struct_index < len(structure) and structure[struct_index]["offset"] == offset): # skip structure item that have same offset; note '==' here!
+			data_size = type_to_size[data_type]
+
+			# Skip structure items with same offset (note '==' here!)
+			while (struct_index < len(structure) and structure[struct_index]["offset"] == offset):
 				item = structure[struct_index]
 				struct_index += 1
 				#print_normal("Skipping structure item '%s' (type '%s') at offset 0x%x; current offset 0x%x" % (item["name"], item["type"], item["offset"], offset))
+
+			# Reduce data size if this would overlap with / obstruct next structure item
+			if (struct_index < len(structure) and structure[struct_index]["offset"] < offset + data_size):
+				data_size = structure[struct_index]["offset"] - offset
+				if (data_size in size_to_type):
+					data_type = size_to_type[data_size]
+				else:
+					print_error("[should-never-occur] No match for data size: %d" % data_size)
+					data_type = "bytes"
+					data_size = type_to_size[data_type]
+
+			# Disassemble data based on determined type/size
 			(offset, _, data_disassembly) = generate_data_disassembly(object["data"], object["size"], offset, data_size, data_type) # https://www.pythonmania.net/en/2017/03/05/underscore-in-python/
 			disassembly += data_disassembly
 			continue
