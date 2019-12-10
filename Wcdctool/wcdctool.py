@@ -93,6 +93,9 @@ def print_normal(text="", end="\n", out=print_out, log=print_log):
 def print_light(text="", end="\n", out=print_out, log=print_log):
 	print_text("\033[1m", text, "\033[0m", end, out, log)
 
+def print_hilite(text="", end="\n", out=print_out, log=print_log):
+	print_text("\033[1;34m", text, "\033[0m", end, out, log)
+
 def print_dark(text="", end="\n", out=print_out, log=print_log):
 	print_text("\033[1;30m", text, "\033[0m", end, out, log)
 
@@ -2131,6 +2134,9 @@ def disassemble_objects(objdump_exec, wdump, outfile_template):
 	#         not touch wdump data, should only work on 'disasm'
 	#write_file(outfile_template, "wdump_output_parsed2.txt", generate_pprint(wdump))
 
+	# Return results
+	return disasm
+
 
 
 # -------------------------------------
@@ -2152,7 +2158,9 @@ def main():
 		{ "type": "normal",	"name": "objdump_exec", "short": "-ode", "long": "--objdump-executable", "arg": "path", "default": "objdump", "help": "Path to objdump executable" },
 		{ "type": "normal", "name": "wdump_output", "short": "-wdo", "long": "--wdump-output", "arg": "file", "help": "Read wdump output from file instead of running wdump" },
 		{ "type": "normal", "name": "wdump_add_output", "short": "-wao", "long": "--wdump-additional-output", "arg": "file", "help": "Read additional wdump output from file" },
-		{ "type": "normal", "name": "outdir", "short": "-o", "long": "--outdir", "arg": "path", "help": "Output directory" },
+		{ "type": "normal", "name": "outdir", "short": "-o", "long": "--outdir", "arg": "path", "help": "Output directory for generated contents" },
+		{ "type": "switch", "name": "debug", "short": "-d", "long": "--debug", "arg": "path", "help": "Drop to interactive debugger before exiting" },
+		{ "type": "switch", "name": "shell", "short": "-s", "long": "--shell", "arg": "path", "help": "Drop to interactive shell before exiting" },
 		{ "type": "help", "name": "help", "short": "-h", "long": "--help", "help": "Display this message" },
 		{ "type": "positional", "name": "infile", "display": "file", "nargs": 1, "help": "File" },
 	]
@@ -2211,7 +2219,20 @@ def main():
 	print_normal()
 
 	# Disassemble objects
-	disassemble_objects(args.objdump_exec, wdump, outfile_template)
+	disasm = disassemble_objects(args.objdump_exec, wdump, outfile_template)
+
+	# Drop to interactive debugger/shell if requested
+	if (args.debug == True or args.shell == True):
+		print_normal()
+		print_light("Dropping to interactive %s..." % ("debugger" if args.debug else "shell"))
+		print_light("Relevant data is stored in locals 'wdump' and 'disasm'.")
+		shell_locals={ "wdump": wdump, "disasm": disasm }
+		if (args.debug == True):
+			import pdb
+			pdb.run("", globals=globals(), locals=shell_locals)
+		else:
+			import code
+			code.interact(banner="", local=shell_locals, exitmsg="")
 
 	# Write log to file
 	print_normal()
