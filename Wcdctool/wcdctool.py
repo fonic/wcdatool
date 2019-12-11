@@ -2015,7 +2015,8 @@ def generate_formatted_disassembly(object, globals):
 				disassembly += generate_comment_box(pre=pre, body=["end of padding / bad code"])
 			elif (item["type"] == "hint start"):
 				if (item["subtype"] == "data"):
-					body = ["Hint %d (%s, %s, %d bytes):" % (item["hintnum"], item["subtype"], item["subtype2"], item["size"])] + (["%s" % item["comment"]] if ("comment" in item) else [])
+					#body = ["Hint %d (%s, %s, %d bytes):" % (item["hintnum"], item["subtype"], item["subtype2"], item["size"])] + (["%s" % item["comment"]] if ("comment" in item) else [])
+					body = ["Hint %d (%s, %s, %d bytes):" % (item["hintnum"], item["subtype"], item["subtype2"], item["size"])] + (["%s" % line for line in item["comment"].split("\\n")] if ("comment" in item) else [])
 				disassembly += generate_comment_box(pre=pre, body=body, width=40)
 			elif (item["type"] == "hint end"):
 				disassembly += generate_comment_box(pre=pre, body=["End of hint"], width=40)
