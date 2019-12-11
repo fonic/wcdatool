@@ -1560,12 +1560,11 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 			print_normal("Adding global for code segment reference cs:0x%x" % addr_val)
 			#globals.append(OrderedDict([("name", None), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
 			#globals.append(OrderedDict([("name", "cs-autovar-tbd"), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
-			globals.append(OrderedDict([("name", "cs-autovar-0x%x" % addr_val), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
+			#globals.append(OrderedDict([("name", "cs-autovar-0x%x" % addr_val), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
 			known_addresses[addr_val] = [ globals[-1] ]
 			added += 1
 
 	print_normal("Added %d globals" % added)
-
 
 	# Process structure, name branches
 	# NOTE: structure has to be sorted for this to work correctly!
@@ -1664,6 +1663,10 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 						if (not access_size in item["sizes"]):
 							item["sizes"].append(access_size)
 				continue
+
+			# TESTING report lines containing 'cs:...'
+			#if ("cs:" in line):
+			#	print_hilite("Line contains 'cs:...': (line %d): %s" % (i+1, line))
 
 			# Add new global
 			#print_normal("Adding global for data segment reference ds:0x%x" % addr_val)
