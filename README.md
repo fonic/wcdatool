@@ -54,6 +54,7 @@ There are multiple ways to use *wcdctool*, but this should get you started:
    # cp <source-dir>/MK3.EXE wcdctool/Executables
    # cp <source-dir>/MKTRIL.EXE wcdctool/Executables
    ```
+   **NOTE:** make sure to correctly name executables so *wcdctool* finds additional wdump output files (`_wao.txt`).
 
 5. Let wcdctool process all provided executables:
    ```
