@@ -19,19 +19,62 @@
 #                                     -
 # -------------------------------------
 #
-# - continue with TODOs @ line 1819
+# - analysis of branches / cs refs / ds refs:
+#   - store pnums in structure items -> ["branches"], ["variables"]; this way, we'll get coherent naming;
+#     currently, e.g. 'ailss_c_variable_1' exists twice (1x in code segment, 1x in data segment)
+#   - better not use 'partial' as type as insert_structure_item check for type 'variable'; instead, create
+#     temporary list of added items and process those afterwards
+#   - check if analysis of branches + cs refs + ds refs can be merged into one step/loop as they are very
+#     similar -> performance gain
 #
-# - handling of virtual padding must be changed, we need to process virtual padding data as normal data (to apply hints, to decode variables etc.)
-#   -> try adding as normal data before 'Disassemble object data' loop
-#   -> see e.g. B0 in object 2 of MK2.EXE -> lies within virtual padding, is not decoded as DWORD
-#   -> check if we should change this for code objects as well
-#   -> also need to extend hints
+# - modify analysis of branches to match cs/ds refs analysis:
+#   - add globals of type 'code'
+#   - use type 'partial-branch' for structure items
 #
-# - 'ds:0x...' reference analysis: need to know ado for known_addresses (can't just add all data globals); important for 'cs:0x...' analysis to work
-#   (otherwise cs: and ds: references get mixed up)
+# - handling of virtual padding must be changed, we need to process virtual padding data as normal data
+#   (to apply hints, to decode variables etc.)
+#   - try adding as normal data before 'Disassemble object data' loop
+#   - see e.g. B0 in object 2 of MK2.EXE -> lies within virtual padding, is not decoded as DWORD
+#   - check if we should change this for code objects as well
+#   - also need to extend hints
+#   -> seems to be done already for data objects (verify)
+#   -> still has to be done for code objects (not easy there)
 #
-# - analyze 'cs:0x...' references same as 'ds:0x...' references; difference is that variables have to be added to _code_ object and also be named
-#   right after analysis
+#
+#
+# - figure out relocation + fixup stuff -> see le_disasm
+#
+#   - there are two tables: fixup page table, fixup record table:
+#
+#                           Linear EXE Header (OS/2 V2.x) - LE
+#     ==============================================================================
+#     file offset = 00002C90H
+#     ...
+#     offset of fixup page table                        = 00000304H
+#     offset of fixup record table                      = 00000510H
+#     fixup section size                                = 0002741DH
+#
+#     -> offset of fixup page/record table in file: file offset + offset of fixup page/record table
+#        (see http://unavowed.vexillium.org/pub/doc/LE, 'LE Header Information Block Layout')
+#
+#
+#   - fixup page table tells which entries in fixup record table belong to which page, e.g.:
+#
+#                                    Fixup Page Table
+#     ==============================================================================
+#       0:00000000       1:00000554       2:00000969       3:00000CD3
+#       ...
+#
+#     -> bytes 0x00000000-0x00000553 of fixup record table contain entries for page 0
+#     -> bytes 0x00000554-0x00000968 of fixup record table contain entries for page 1
+#     -> ...
+#
+#
+#   - fixup record table contains, well, fixup records; format is described in http://unavowed.vexillium.org/pub/doc/LE, 'LE Header Fixup Record  Table Layout')
+#     -> problem is that records are not of equal/fixed size; size depends on contents of first two bytes (relocation address type, relocation type)
+#     -> we can and should use Python module 'struct' for this
+#
+#
 #
 # - probably rename type 'function' to 'subroutine' -> more general; search & replace for '"function"'
 #
@@ -1068,6 +1111,7 @@ def generate_define_byte(offset, value, comment=False):
 # - 'default': inserts after existing items with equal offset
 # - 'start':   inserts after existing items with equal offset, but before variables with equal offsets (for start items; see e.g. hint start for 'RAND' in object 2 of 'MK1_NO_DOS4GW.EXE')
 # - 'end':     inserts before existing items with equal offset, starts looking for insertion point after start_item (for end items; see e.g. hint ends in object 2 of 'MK1_NO_DOS4GW.EXE')
+# NOTE: item must have attribute 'offset', everything else is optional
 def insert_structure_item(structure, item, mode="default", start_item=None):
 	if (mode == "default"):
 		for i in range(0, len(structure)):
@@ -1225,7 +1269,8 @@ def generate_data_disassembly(data, size, offset, length, type):
 			actual_length += 1
 			offset += 1
 
-	# TODO: not sure if this works correctly for fwords as those are somewhat different (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector)
+	# TODO: not sure if this works correctly for fwords as those are somewhat different (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector);
+	#       we have yet to see some FWORD in code to verify...
 	elif (type in ("words", "dwords", "fwords", "qwords")):	# words, dwords, fwords, qwords
 		type_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq" }
 		type_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8 }
@@ -1257,7 +1302,7 @@ def generate_data_disassembly(data, size, offset, length, type):
 
 
 # Disassembles code object
-def disassemble_code_object(object, modules, globals, objdump_exec):
+def disassemble_code_object(object, modules, globals, objdump_exec, data_object):
 	print_light("Disassembling code object %d:" % object["num"])
 	print_normal("Actual size: %d bytes, virtual size: %d bytes" % (object["size"], object["virtual memory size"]))
 	disassembly = []
@@ -1419,21 +1464,33 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 	insert_structure_item(structure, OrderedDict([("type", "object end"), ("offset", object["virtual memory size"] if (object["virtual memory size"] > object["size"]) else object["size"]), ("name", "Object %d" % object["num"]), ("label", "object_%d" % object["num"]), ("objnum", object["num"])]))
 
 
-	# -------------------------- structure completion --------------------------
+	# ----------------------------- branch analysis (call/jump commands) -----------------------------
 
 
 	# Analyze branches (i.e. target addresses of call/jump instructions), add them to structure
 	print_normal("Analyzing branches...")
 
+	# Collect already known addresses, i.e. structure items of type 'function'
+	#known_addresses = OrderedDict()
+	#for item in structure:
+	#	#if (not item["type"] in ("object start", "module", "function")):
+	#	if (item["type"] != "function"):
+	#		continue
+	#	if (not item["offset"] in known_addresses):
+	#		known_addresses[item["offset"]] = []
+	#	known_addresses[item["offset"]].append(item)
+
+	# Collect already known addresses, i.e. globals of type 'code' belonging to current object
 	known_addresses = OrderedDict()
-	for item in structure:
-		#if (not item["type"] in ("object start", "module", "function")):
-		if (item["type"] != "function"):
+	for item in globals:
+		if (item["segment"] != object["num"] or item["type"] != "code"):
 			continue
 		if (not item["offset"] in known_addresses):
 			known_addresses[item["offset"]] = []
 		known_addresses[item["offset"]].append(item)
+	print_normal("Known addresses: %d" % len(known_addresses))
 
+	# Perform analysis
 	added = 0
 	for i in range(0, len(disassembly)):
 		line = disassembly[i]
@@ -1455,7 +1512,7 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 				continue
 
 			#print_normal("Adding branch for address 0x%x" % address)
-			item = insert_structure_item(structure, OrderedDict([("type", "branch"), ("offset", address)]))
+			item = insert_structure_item(structure, OrderedDict([("type", "branch"), ("offset", address), ("name", None), ("label", None)]))
 			known_addresses[address] = [ item ]
 			added += 1
 
@@ -1486,24 +1543,25 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 	print_normal("Named %d branches" % named)
 
 
+	# -------------------------- code segment reference ('cs:0x...') analysis --------------------------
 
-
-
-    # TESTING
-	# -------------------------- code segment reference ('cd:0x...') analysis --------------------------
 
 	# Analyze code segment references (i.e. 'cs:0x...' occurences in code), determine access size, add missing references to globals
 	# NOTE: this modifies globals, not structure!
 	print_normal("Analyzing code segment references...")
 
+	# Collect already known addresses, i.e. globals of type 'data' belonging to current object
 	known_addresses = OrderedDict()
 	for item in globals:
-		if (item["segment"] != object["num"] or item["type"] != "data"):
+		#if (item["segment"] != object["num"] or item["type"] != "data"):
+		if (item["segment"] != object["num"]): # also gather 'code' items, e.g. '_Alphabet'
 			continue
 		if (not item["offset"] in known_addresses):
 			known_addresses[item["offset"]] = []
 		known_addresses[item["offset"]].append(item)
+	print_normal("Known addresses: %d" % len(known_addresses))
 
+	# Perform analysis
 	added = 0
 	for i in range(0, len(disassembly)):
 		line = disassembly[i]
@@ -1515,7 +1573,7 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 		if (asm["type"] == "normal"):
 			match = re.search("cs:0x([0-9a-fA-F]+)", asm["arguments"])
 			if (match == None):
-				match = re.search("cs:\[.+\+0x([0-9a-fA-F]+)\]", asm["arguments"])
+				match = re.search("cs:\[.+[+-]0x([0-9a-fA-F]+)\]", asm["arguments"])
 			if (match == None):
 				continue
 			addr_str = match.group(0)
@@ -1542,7 +1600,7 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 					elif (re.search("%s,(al|ah|bl|bh|cl|ch|dl|dh)" % addr_str, asm["arguments"])):
 						access_size = "BYTE"
 			if (access_size == None):
-				print_warn("Failed to determine access size (line %d): %s" % (i+1, line))
+				print_warn("Failed to determine cs access size (line %d): %s" % (i+1, line))
 
 			# Check if address is known; if so, add access size if available
 			if (addr_val in known_addresses):
@@ -1556,125 +1614,171 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 							item["sizes"].append(access_size)
 				continue
 
+			# TESTING DEBUG report lines containing 'ds:' (should not occur)
+			if ("ds:" in line):
+				print_error("[should-never-occur] Line contains 'ds:': (line %d): %s" % (i+1, line))
+
 			# Add new global
-			print_normal("Adding global for code segment reference cs:0x%x" % addr_val)
-			#globals.append(OrderedDict([("name", None), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
-			#globals.append(OrderedDict([("name", "cs-autovar-tbd"), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
-			#globals.append(OrderedDict([("name", "cs-autovar-0x%x" % addr_val), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
+			#print_normal("Adding global for code segment reference cs:0x%x" % addr_val)
+			globals.append(OrderedDict([("name", None), ("module", None), ("segment", object["num"]), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
 			known_addresses[addr_val] = [ globals[-1] ]
+
+			# Add new structure item (partial code segment variable)
+			#print_normal("Adding structure item for code segment reference cs:0x%x" % addr_val)
+			item = globals[-1]
+			insert_structure_item(structure, OrderedDict([("type", "partial-cs-var"), ("offset", item["offset"]), ("name", item["name"]), ("label", item["name"])] + ([("sizes", item["sizes"])] if "sizes" in item else []) + [("global", item)]))
+
 			added += 1
 
-	print_normal("Added %d globals" % added)
+	# Sort globals
+	globals.sort(key=lambda item: (item["segment"], item["offset"]))
 
-	# Process structure, name branches
+	print_normal("Added %d globals for code segment references" % added)
+	print_normal("Added %d structure items for code segment references" % added)
+
+
+	# Process structure, complete partial code segment variables (i.e. fill in all missing information)
 	# NOTE: structure has to be sorted for this to work correctly!
-	#print_normal("Naming branches...")
-	#parent = None
-	#pnums = {}
-	#named = 0
-	#for i in range(0, len(structure)):
-	#	item = structure[i]
-	#	if (item["type"] in ("object start", "module", "function")):
-	#		parent = item
-	#		if (not parent["name"] in pnums):
-	#			pnums[parent["name"]] = 0
-	#	if (item["type"] == "branch"):
-	#		if (parent != None):
-	#			pnums[parent["name"]] += 1
-	#			item["name"] = "%s branch %d" % (parent["name"], pnums[parent["name"]])
-	#			item["label"] = "%s_branch_%d" % (parent["label"], pnums[parent["name"]])
-	#			named += 1
-	#		else:
-	#			print_error("[should-never-occur] Branch without parent")
-	#
-	#print_normal("Named %d branches" % named)
+	# NOTE: link to global is used to fill in missing information for global as well; link is removed once this is done
+	print_normal("Completing partial code segment variables...")
+	parent = None
+	pnums = {}
+	last_modnum = None
+	completed = 0
+	for i in range(0, len(structure)):
+		item = structure[i]
+		# TODO: use last variable as parent if current variable is within size of last variable, e.g.
+		# A2:                                                ; sizes: DWORD, WORD, BYTE
+		#    24b40:	00                   	db     0x00
+		#    24b41:	00                   	db     0x00
+		# A2_variable_1:                                     ; size: WORD
+		#    24b42:	00                   	db     0x00
+		#    24b43:	00                   	db     0x00
+		#if (item["type"] in ("object start", "module", "variable")): # using variables as parent is sometimes helpful (e.g. module 'RAM.ASM'), but not always
+		if (item["type"] in ("object start", "module")):
+			parent = item
+			if (not parent["name"] in pnums):
+				pnums[parent["name"]] = 0
+			if (item["type"] == "module"):
+				last_modnum = item["modnum"]
+		if (item["type"] == "partial-cs-var"):
+			if (parent != None):
+				pnums[parent["name"]] += 1
+				item["type"] = "variable"
+				item["name"] = "%s variable %d" % (parent["name"], pnums[parent["name"]])
+				item["label"] = "%s_variable_%d" % (parent["label"], pnums[parent["name"]])
+				item["global"]["name"] = item["label"]
+				item["global"]["module"] = last_modnum
+				#item["global"]["segment"] = object["num"]
+				del(item["global"])
+				completed += 1
+			else:
+				print_error("[should-never-occur] Partial code segment variable without parent")
 
-
-
-
+	print_normal("Completed %d partial code segment variables" % completed)
 
 
 	# -------------------------- data segment reference ('ds:0x...') analysis --------------------------
 
 
-	# Analyze data segment references (i.e. 'ds:0x...' occurences in code), determine access size, add missing references to globals
-	# NOTE: this modifies globals, not structure!
-	# NOTE: added globals will be picked up by automatic data object during its disassembly
-	# NOTE: globals may not be sorted after this until 'segment' is filled in (because 'None' is not sortable)
-	print_normal("Analyzing data segment references...")
+	# We can only do this if we have a designated data object (without, we have no way of knowing which object 'ds:...' references point to)
+	if (data_object != None):
 
-	# TODO: is it correct to collect all data globals? shouldn't this collect only data globals belonging to the automatic data object (e.g. MKTRIL.EXE with two data objects)?
-	known_addresses = OrderedDict()
-	for item in globals:
-		if (item["type"] != "data"):
-			continue
-		if (not item["offset"] in known_addresses):
-			known_addresses[item["offset"]] = []
-		known_addresses[item["offset"]].append(item)
+		# Analyze data segment references (i.e. 'ds:0x...' occurences in code), determine access size, add missing references to globals
+		# NOTE: this modifies globals, not structure!
+		# NOTE: added globals will be picked up by automatic data object during its disassembly
+		# NOTE: globals may not be sorted after this until 'segment' is filled in (because 'None' is not sortable)
+		print_normal("Analyzing data segment references...")
 
-	added = 0
-	for i in range(0, len(disassembly)):
-		line = disassembly[i]
-		asm = split_asm_line(line)
-		if (asm == None):
-			print_warn("Invalid assembler line (line %d): %s" % (i+1, line))
-			continue
-
-		if (asm["type"] == "normal"):
-			match = re.search("ds:0x([0-9a-fA-F]+)", asm["arguments"])
-			if (match == None):
-				match = re.search("ds:\[.+\+0x([0-9a-fA-F]+)\]", asm["arguments"])
-			if (match == None):
+		# Collect already known addresses, i.e. globals of type 'data' belonging to data object
+		known_addresses = OrderedDict()
+		for item in globals:
+			if (item["segment"] != data_object or item["type"] != "data"):
 				continue
-			addr_str = match.group(0)
-			addr_val = int(match.group(1), 16)
+			if (not item["offset"] in known_addresses):
+				known_addresses[item["offset"]] = []
+			known_addresses[item["offset"]].append(item)
+		print_normal("Known addresses: %d" % len(known_addresses))
 
-			# Determine access size
-			access_size = None
-			match = re.search("([a-zA-Z]+) PTR %s" % re.escape(addr_str), asm["arguments"])
-			if (match):
-				access_size = match.group(1)
-			if (access_size == None):
-				if (asm["command"] == "mov"):
-					# NOTE: order is important! longest matches first, e.g. try matching 'eax' before 'ax'!
-					if (re.search("(eax|ebx|ecx|edx),%s" % addr_str, asm["arguments"])):
-						access_size = "DWORD"
-					elif (re.search("%s,(eax|ebx|ecx|edx)" % addr_str, asm["arguments"])):
-						access_size = "DWORD"
-					elif (re.search("(ax|bx|cx|dx),%s" % addr_str, asm["arguments"])):
-						access_size = "WORD"
-					elif (re.search("%s,(ax|bx|cx|dx)" % addr_str, asm["arguments"])):
-						access_size = "WORD"
-					elif (re.search("(al|ah|bl|bh|cl|ch|dl|dh),%s" % addr_str, asm["arguments"])):
-						access_size = "BYTE"
-					elif (re.search("%s,(al|ah|bl|bh|cl|ch|dl|dh)" % addr_str, asm["arguments"])):
-						access_size = "BYTE"
-			if (access_size == None):
-				print_warn("Failed to determine access size (line %d): %s" % (i+1, line))
-
-			# Check if address is known; if so, add access size if available
-			if (addr_val in known_addresses):
-				#names = [ "'%s'" % item["name"] if ("name" in item) else "'<none'>" for item in known_addresses[address] ]
-				#print_normal("Known item(s) %s for address 0x%x" % (str.join(", ", names), address))
-				if (access_size != None):
-					for item in known_addresses[addr_val]:
-						if (not "sizes" in item):
-							item["sizes"] = []
-						if (not access_size in item["sizes"]):
-							item["sizes"].append(access_size)
+		# Perform analysis
+		added = 0
+		for i in range(0, len(disassembly)):
+			line = disassembly[i]
+			asm = split_asm_line(line)
+			if (asm == None):
+				print_warn("Invalid assembler line (line %d): %s" % (i+1, line))
 				continue
 
-			# TESTING report lines containing 'cs:...'
-			#if ("cs:" in line):
-			#	print_hilite("Line contains 'cs:...': (line %d): %s" % (i+1, line))
+			if (asm["type"] == "normal"):
+				match = re.search("ds:0x([0-9a-fA-F]+)", asm["arguments"])
+				if (match == None):
+					match = re.search("ds:\[.+[+-]0x([0-9a-fA-F]+)\]", asm["arguments"])
+				#if (match == None): # TODO: try re-enabling this once relocation + fixup is in place; without, this gives way to many false-positives
+				#	match = re.search("(?<!s:)\[.+[+-]0x([0-9a-fA-F]+)\]", asm["arguments"]) # (?<!s:) -> negative lookahead -> may not preceded by 's:' -> https://stackoverflow.com/a/47886935
+				if (match == None):
+					continue
+				addr_str = match.group(0)
+				addr_val = int(match.group(1), 16)
 
-			# Add new global
-			#print_normal("Adding global for data segment reference ds:0x%x" % addr_val)
-			globals.append(OrderedDict([("name", None), ("module", None), ("segment", None), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
-			known_addresses[addr_val] = [ globals[-1] ]
-			added += 1
+				# TESTING MK1.EXE hard-code to avoid problems resulting from third regex above
+				# TODO: we need to evolve this into something dynamic -> perhaps check if reference points to data belonging to same module?
+				#       problem is there's no way to tell if offset is just a number or a data reference
+				#       -> solution to this should be relocation + fixups
+				#if (addr_val < 0x6f4):
+				#	continue
 
-	print_normal("Added %d globals" % added)
+				# Determine access size
+				access_size = None
+				match = re.search("([a-zA-Z]+) PTR %s" % re.escape(addr_str), asm["arguments"])
+				if (match):
+					access_size = match.group(1)
+				if (access_size == None):
+					if (asm["command"] == "mov"):
+						# NOTE: order is important! longest matches first, e.g. try matching 'eax' before 'ax'!
+						if (re.search("(eax|ebx|ecx|edx),%s" % addr_str, asm["arguments"])):
+							access_size = "DWORD"
+						elif (re.search("%s,(eax|ebx|ecx|edx)" % addr_str, asm["arguments"])):
+							access_size = "DWORD"
+						elif (re.search("(ax|bx|cx|dx),%s" % addr_str, asm["arguments"])):
+							access_size = "WORD"
+						elif (re.search("%s,(ax|bx|cx|dx)" % addr_str, asm["arguments"])):
+							access_size = "WORD"
+						elif (re.search("(al|ah|bl|bh|cl|ch|dl|dh),%s" % addr_str, asm["arguments"])):
+							access_size = "BYTE"
+						elif (re.search("%s,(al|ah|bl|bh|cl|ch|dl|dh)" % addr_str, asm["arguments"])):
+							access_size = "BYTE"
+				if (access_size == None):
+					print_warn("Failed to determine ds access size (line %d): %s" % (i+1, line))
+
+				# Check if address is known; if so, add access size if available
+				if (addr_val in known_addresses):
+					#names = [ "'%s'" % item["name"] if ("name" in item) else "'<none'>" for item in known_addresses[address] ]
+					#print_normal("Known item(s) %s for address 0x%x" % (str.join(", ", names), address))
+					if (access_size != None):
+						for item in known_addresses[addr_val]:
+							if (not "sizes" in item):
+								item["sizes"] = []
+							if (not access_size in item["sizes"]):
+								item["sizes"].append(access_size)
+					continue
+
+				# TESTING DEBUG report lines containing 'cs:' (should not occur)
+				if ("cs:" in line):
+					print_error("[should-never-occur] Line contains 'cs:': (line %d): %s" % (i+1, line))
+
+				# Add new global
+				#print_normal("Adding global for data segment reference ds:0x%x" % addr_val)
+				globals.append(OrderedDict([("name", None), ("module", None), ("segment", None), ("offset", addr_val), ("type", "data")] + ([("sizes", [ access_size ])] if (access_size != None) else [])))
+				known_addresses[addr_val] = [ globals[-1] ]
+				added += 1
+
+		print_normal("Added %d globals for data segment references" % added)
+
+	else:
+		print_warn("No data object specified, skipping data segment reference analysis.")
+
+
+	# ------------------------------------------- done -------------------------------------------------
 
 
 	# Print stats, store results
@@ -1684,8 +1788,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec):
 	object["structure"] = structure
 
 
+
 # Disassembles data object
-def disassemble_data_object(object, modules, globals):
+def disassemble_data_object(object, modules, globals, data_object):
 	print_light("Disassembling data object %d:" % object["num"])
 	print_normal("Actual size: %d bytes, virtual size: %d bytes" % (object["size"], object["virtual memory size"]))
 	disassembly = []
@@ -1727,30 +1832,32 @@ def disassemble_data_object(object, modules, globals):
 	print_normal("Added %d variables to structure" % added)
 
 
-	# Special handling if object is automatic data object (i.e. object["num"] == wdump["linear exe header [...]"]["data"]["object # for automatic data object"])
-	if (object["automatic data object"] == True):
+	# Special handling if object is designated data object
+	if (object["num"] == data_object):
 
-		# Process globals of type 'data' with segment 'None', add as unassigned variables to structure
+		# Process globals of type 'data' with segment 'None' (i.e. unassigned variables), add as partial data segment variables to structure
 		# NOTE: these globals come from data segment reference ('ds:0x...') analysis of code objects
-		# NOTE: link to global is temporarily required for assignment below, well be removed later; could also use map structure -> item
+		# NOTE: link to global is temporarily required for assignment below, will be removed later; could also use map structure -> item
 		print_normal("Adding unassigned variables to structure...")
 		added = 0
 		items = [ item for item in globals if (item["segment"] == None and item["type"] == "data") ]
 		for item in items:
-			insert_structure_item(structure, OrderedDict([("type", "unassigned"), ("offset", item["offset"]), ("name", item["name"]), ("label", item["name"])] + ([("sizes", item["sizes"])] if "sizes" in item else []) + [("global", item)]))
+			insert_structure_item(structure, OrderedDict([("type", "partial-ds-var"), ("offset", item["offset"]), ("name", item["name"]), ("label", item["name"])] + ([("sizes", item["sizes"])] if "sizes" in item else []) + [("global", item)]))
 			added += 1
 		print_normal("Added %d unassigned variables to structure" % added)
 
-		# Process structure, assign unassigned variables (i.e. fill in all missing information)
+
+		# Process structure, complete partial data segment variables (i.e. fill in all missing information)
 		# NOTE: structure has to be sorted for this to work correctly!
 		# NOTE: link to global is used to fill in missing information for global as well; link is removed once this is done
-		print_normal("Assigning unassigned variables...")
+		print_normal("Completing partial data segment variables...")
 		parent = None
 		pnums = {}
 		last_modnum = None
-		named = 0
+		completed = 0
 		for i in range(0, len(structure)):
 			item = structure[i]
+			# TODO: use last variable as parent if current variable is within size of last variable -> see example in comment on 'cs:...' analysis
 			#if (item["type"] in ("object start", "module", "variable")): # using variables as parent is sometimes helpful (e.g. module 'RAM.ASM'), but not always
 			if (item["type"] in ("object start", "module")):
 				parent = item
@@ -1758,7 +1865,7 @@ def disassemble_data_object(object, modules, globals):
 					pnums[parent["name"]] = 0
 				if (item["type"] == "module"):
 					last_modnum = item["modnum"]
-			if (item["type"] == "unassigned"):
+			if (item["type"] == "partial-ds-var"):
 				if (parent != None):
 					pnums[parent["name"]] += 1
 					item["type"] = "variable"
@@ -1768,16 +1875,17 @@ def disassemble_data_object(object, modules, globals):
 					item["global"]["module"] = last_modnum
 					item["global"]["segment"] = object["num"]
 					del(item["global"])
-					named += 1
+					completed += 1
 				else:
-					print_error("[should-never-occur] Unassigned variable without parent")
-		print_normal("Assigned %d unassigned variables" % named)
+					print_error("[should-never-occur] Partial data segment variable without parent")
+
+		print_normal("Completed %d partial data segment variables" % completed)
 
 		# Globals can now be safely sorted as there should be no missing information left at this point (i.e. no 'None')
 		globals.sort(key=lambda item: (item["segment"], item["offset"]))
 
 
-	# TESTING Add virtual padding data to object data so it is processed like normal data (important for hints, variables etc.)
+	# TESTING Add virtual padding data to object data now so it is processed like normal data (important for hints, variables etc.)
 	if (object["size"] < object["virtual memory size"]):
 		print_normal("Appending virtual size padding data (%d bytes)..." % (object["virtual memory size"] - object["size"]))
 		insert_structure_item(structure, OrderedDict([("type", "virtual padding start"), ("offset", object["size"]), ("name", "Virtual padding"), ("label", "virtual_padding"), ("size", object["virtual memory size"] - object["size"]), ("objnum", object["num"])]))
@@ -1858,13 +1966,16 @@ def disassemble_data_object(object, modules, globals):
 				struct_index += 1
 				#print_normal("Skipping structure item '%s' (type '%s') at offset 0x%x; current offset 0x%x" % (item["name"], item["type"], item["offset"], offset))
 
-			# Reduce data size if this would overlap with / obstruct next structure item
+			# Check if data size would overlap with / obstruct next structure item; if so, use
+			# distance to next structure item as basis and determine nearest smaller data size
 			if (struct_index < len(structure) and structure[struct_index]["offset"] < offset + data_size):
 				data_size = structure[struct_index]["offset"] - offset
-				if (data_size in size_to_type):
+				if (data_size > 0):
+					while (data_size > 1 and not data_size in size_to_type):
+						data_size = data_size - 1
 					data_type = size_to_type[data_size]
 				else:
-					print_error("[should-never-occur] No match for data size: %d" % data_size)
+					print_error("[should-never-occur] Something is seriously wrong with data size: %d" % data_size)
 					data_type = "bytes"
 					data_size = type_to_size[data_type]
 
@@ -1873,7 +1984,7 @@ def disassemble_data_object(object, modules, globals):
 			disassembly += data_disassembly
 			continue
 
-		# tbd
+		# Disassemble one byte, advance offset
 		value = object["data"][offset]
 		disassembly.append(generate_define_byte(offset, value, comment=True))
 		offset += 1
@@ -1897,33 +2008,49 @@ def disassemble_data_object(object, modules, globals):
 	object["structure"] = structure
 
 
+
 # Generates formatted disassembly, i.e. plain disassembly + disassembly structure -> formatted disassembly
-def generate_formatted_disassembly(object, globals):
+def generate_formatted_disassembly(object, globals, data_object):
 	print_light("Generating formatted disassembly of object %d:" % object["num"])
 
-	# TESTING
+	# tbd
 	if (object["type"] == "code"):
-		# TESTING: replace branch addresses with labels: generate dict offset -> list of structure targets
-		branch_targets = OrderedDict()
+		# Prepare replace branch addresses with labels: generate dict offset -> list of structure targets
+		branches = OrderedDict()
 		for item in object["structure"]:
 			if (not item["type"] in ("function", "branch")):
 				continue
-			if (not item["offset"] in branch_targets):
-				branch_targets[item["offset"]] = []
-			branch_targets[item["offset"]].append(item)
-		#content = generate_pprint(branch_targets)
-		#write_file("/tmp/%s", "testingbranch_targets.txt", content)
+			if (not item["offset"] in branches):
+				branches[item["offset"]] = []
+			branches[item["offset"]].append(item)
+		#content = generate_pprint(branches)
+		#write_file("/tmp/%s", "testing_branches.txt", content)
 
-		# TESTING: replace 'ds:0x...' with variables
-		variables = OrderedDict()
+		# Prepare replace 'cs:0x...' references with cs variables
+		cs_vars = OrderedDict()
 		for item in globals:
-			if (not item["type"] == "data"):
+			#if (item["segment"] != object["num"] or item["type"] != "data"):
+			if (item["segment"] != object["num"]): # also gather 'code' items, e.g. '_Alphabet'
 				continue
-			if (not item["offset"] in variables):
-				variables[item["offset"]] = []
-			variables[item["offset"]].append(item)
-		#content = generate_pprint(variables)
-		#write_file("/tmp/%s", "testing_variables.txt", content)
+			if (not item["offset"] in cs_vars):
+				cs_vars[item["offset"]] = []
+			cs_vars[item["offset"]].append(item)
+		#content = generate_pprint(cs_vars)
+		#write_file("/tmp/%s", "testing_cs_vars.txt", content)
+
+		# Prepare replace 'ds:0x...' references with ds variables
+		ds_vars = OrderedDict()
+		if (data_object != None):
+			for item in globals:
+				if (item["segment"] != data_object or item["type"] != "data"):
+					continue
+				if (not item["offset"] in ds_vars):
+					ds_vars[item["offset"]] = []
+				ds_vars[item["offset"]].append(item)
+			#content = generate_pprint(ds_vars)
+			#write_file("/tmp/%s", "testing_ds_vars.txt", content)
+
+		print_normal("Branches: %d, cs variables: %d, ds variables: %d" % (len(branches), len(cs_vars), len(ds_vars)))
 
 	# Process disassembly (for i in ...) and structure (while struct_index < ...)
 	disassembly = []
@@ -1940,57 +2067,81 @@ def generate_formatted_disassembly(object, globals):
 			elif (asm["type"] == "normal" or asm["type"] == "hex"):
 				current_offset = asm["offset"]
 
-			# TESTING
+			# tbd
 			if (object["type"] == "code"):
-				# TESTING: replace branch addresses with labels
+				# Replace branch addresses with labels
 				if (asm != None and asm["type"] == "normal" and (asm["command"] == "call" or asm["command"].startswith("j"))):
 					match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
 					if (match == None):
 						#print_warn("Failed to match address (line %d): %s" % (i+1, line))
-						#continue
 						pass
 					else:
 						addr_str = match.group(0)
 						addr_val = int(match.group(1), 16)
-						if (addr_val in branch_targets):
-							line = line.replace(addr_str, branch_targets[addr_val][0]["label"])
+						if (addr_val in branches):
+							line = line.replace(addr_str, branches[addr_val][0]["label"])
 						else:
-							print_error("replace branch targets: No match for offset 0x%x: %s" % (addr_val, line))
+							print_error("[should-never-occur] Replace branch targets: no match for offset 0x%x: %s" % (addr_val, line))
 
-				# TESTING: replace 'ds:0x...' with variables
-				if (asm != None and asm["type"] == "normal"):
-					match = re.search("(ds:0x([0-9a-fA-F]+))", asm["arguments"].strip())
+				# Replace 'cs:0x...' references with cs variables
+				if (asm["type"] == "normal"):
+					#match = re.search("(cs:0x([0-9a-fA-F]+))", asm["arguments"])
+					match = re.search("cs:(0x([0-9a-fA-F]+))", asm["arguments"])
+					if (match == None):
+						match = re.search("cs:\[.+[+-](0x([0-9a-fA-F]+))\]", asm["arguments"])
 					if (match == None):
 						#print_warn("Failed to match address (line %d): %s" % (i+1, line))
-						#continue
 						pass
 					else:
 						addr_str = match.group(1)
 						addr_val = int(match.group(2), 16)
-						if (addr_val in variables):
-							#print_warn("Replacing ds:0x variable:    %s -> %s" % (line, variables[addr_val][0]["name"]))
-							line = line.replace(addr_str, variables[addr_val][0]["name"])
+						if (addr_val in cs_vars):
+							#print_warn("Replacing cs:0x variable:    %s -> %s" % (line, cs_vars[addr_val][0]["name"]))
+							line = line.replace(addr_str, cs_vars[addr_val][0]["name"])
 						else:
-							#print_error("replace variables: No match for offset 0x%x: %s" % (addr_val, line))
+							#print_error("replace cs variables: no match for offset 0x%x: %s" % (addr_val, line))
 							pass
 
-				# TESTING: replace indirect address + base with variables
-				# e.g.      10d:       83 3c 9d 08 98 04 00 00         cmp    DWORD PTR [ebx*4+0x49808],0x0   ->   [ebx*4+0x49808]   ->   [ebx*4+smp]
-				if (asm != None and asm["type"] == "normal"):
-					match = re.search("\[.+\+(0x([0-9a-fA-F]+))\]", asm["arguments"].strip())
+				# Replace 'ds:0x...' references with ds variables
+				if (asm["type"] == "normal"):
+					#match = re.search("(ds:0x([0-9a-fA-F]+))", asm["arguments"])
+					match = re.search("ds:(0x([0-9a-fA-F]+))", asm["arguments"])
+					if (match == None):
+						match = re.search("ds:\[.+[+-](0x([0-9a-fA-F]+))\]", asm["arguments"])
+					#if (match == None): # TODO: try re-enabling this once relocation + fixup is in place; without, this gives way to many false-positives
+					#	match = re.search("(?<!s:)\[.+[+-](0x([0-9a-fA-F]+))\]", asm["arguments"]) # (?<!s:) -> negative lookahead -> may not preceded by 's:' -> https://stackoverflow.com/a/47886935
 					if (match == None):
 						#print_warn("Failed to match address (line %d): %s" % (i+1, line))
-						#continue
 						pass
 					else:
 						addr_str = match.group(1)
 						addr_val = int(match.group(2), 16)
-						if (addr_val in variables and not variables[addr_val][0]["name"] == "__nullarea"):
-							#print_warn("Replacing [...+0x] variable: %s -> %s" % (line, variables[addr_val][0]["name"]))
-							line = line.replace(addr_str, variables[addr_val][0]["name"])
+						if (addr_val in ds_vars and addr_str != "0x0"): # 0x0 -> exception for [<reg>+0x0], which appears quite often and would be replaced by '__nullarea'
+							#print_warn("Replacing ds:0x variable:    %s -> %s" % (line, ds_vars[addr_val][0]["name"]))
+							line = line.replace(addr_str, ds_vars[addr_val][0]["name"])
 						else:
-							#print_error("replace variables: No match for offset 0x%x: %s" % (addr_val, line))
+							#print_error("replace ds variables: no match for offset 0x%x: %s" % (addr_val, line))
 							pass
+
+				# Replace indirect address + base with ds variables
+				# e.g. '  10d:  83 3c 9d 08 98 04 00 00   cmp    DWORD PTR [ebx*4+0x49808],0x0' -> [ebx*4+0x49808] > [ebx*4+smp]
+				#       '6767:  8b 3c bd 08 9f 04 00      mov    edi,DWORD PTR [edi*4+0x49f08]'
+				# NOTE: merged this into replacement routine above (see third regex)
+				#if (asm != None and asm["type"] == "normal"):
+				#	match = re.search("(?<!s:)\[.+[+-](0x([0-9a-fA-F]+))\]", asm["arguments"]) # (?<!s:) -> negative lookahead -> may not preceded by 's:' -> https://stackoverflow.com/a/47886935
+				#	if (match == None):
+				#		#print_warn("Failed to match address (line %d): %s" % (i+1, line))
+				#		#continue
+				#		pass
+				#	else:
+				#		addr_str = match.group(1)
+				#		addr_val = int(match.group(2), 16)
+				#		if (addr_val in ds_vars and not ds_vars[addr_val][0]["name"] == "__nullarea"):
+				#			#print_warn("Replacing [...+0x] variable: %s -> %s" % (line, ds_vars[addr_val][0]["name"]))
+				#			line = line.replace(addr_str, ds_vars[addr_val][0]["name"])
+				#		else:
+				#			#print_error("replace ds variables: no match for offset 0x%x: %s" % (addr_val, line))
+				#			pass
 
 		# Last loop iteration
 		else:
@@ -2055,19 +2206,47 @@ def generate_formatted_disassembly(object, globals):
 	object["disassembly2"] = disassembly
 
 
+
 # tbd
-def disassemble_objects(objdump_exec, wdump, outfile_template):
+def disassemble_objects(objdump_exec, wdump, outfile_template, data_object):
 	print_light("Disassembling objects:")
 	disasm = OrderedDict([("objects", []), ("modules", []), ("globals", [])])
 
-	# Determine automatic data object (i.e. object to which 'ds:0x...' references implicitly point to)
-	# TODO: needs additional safety checks: check if object exists and if object is of type 'data'
-	ado = None
-	for section in wdump:
-		if (section.startswith("linear exe header")):
-			if ("object # for automatic data object" in wdump[section]["data"]):
-				ado = wdump[section]["data"]["object # for automatic data object"]
-				print_normal("Identified automatic data object: object %d" % ado)
+
+	# TODO: put this after 'preprocess objects'; set 'automatic data object' to 'false' in preprocess, then set it to true here for data object
+	#       -> makes life easier as we can use disasm["objects"] to check data object
+
+	# If data object was not specified by user on command line, try to locate automatic data object hint in wdump data
+	if (data_object == None):
+		print_normal("Locating automatic data object hint...")
+		for section in wdump:
+			if (section.startswith("linear exe header")):
+				if ("object # for automatic data object" in wdump[section]["data"]):
+					data_object = wdump[section]["data"]["object # for automatic data object"]
+					print_normal("Located automatic data object hint: object %d" % data_object)
+					break
+		if (data_object == None):
+			print_warn("Failed to locate automatic data object hint")
+
+	# Check if data object (either user-specified or from automatic data object hint) is valid, i.e. it exists and is of type 'data'
+	if (data_object != None):
+		print_normal("Verifying data object %d..." % data_object)
+		if (data_object in wdump["object table"]["data"]):
+			object = wdump["object table"]["data"][data_object]
+			object_type = "code" if ("executable" in object["flags"].lower()) else "data"
+			if (object_type == "data"):
+				print_normal("Data object %d verified" % data_object)
+			else:
+				print_warn("Object %d has wrong type: expected 'data', got '%s'" % (data_object, object_type))
+				data_object = None
+		else:
+			print_warn("Object %d not found in object table" % data_object)
+			data_object = None
+
+	# Do we have a data object by now?
+	if (data_object == None):
+		print_warn("No data object specified. Data segment reference analysis/replacement disabled.")
+
 
 	# Preprocess objects: accumulate data over pages/segments, determine size, determine type, add hints, add flag for automatic data object, sort
 	if ("object table" in wdump):
@@ -2090,7 +2269,7 @@ def disassemble_objects(objdump_exec, wdump, outfile_template):
 				for entry in wdump["object hints"]["data"][object["num"]]["entries"].values():
 					object_hints.append(OrderedDict([(key, entry[key]) for key in entry.keys()]))
 				object_hints.sort(key=lambda item: item["offset"])
-			disasm["objects"].append(OrderedDict([(key, object[key]) for key in object.keys() if (key != "pages")] + ([("automatic data object", True if (ado != None and object["num"] == ado) else False)] if (object_type == "data") else []) + [("size", object_size), ("data", object_data), ("type", object_type), ("hints", object_hints), ("structure", []), ("disassembly1", []), ("disassembly2", [])])) # https://stackoverflow.com/a/32895702
+			disasm["objects"].append(OrderedDict([(key, object[key]) for key in object.keys() if (key != "pages")] + ([("automatic data object", True if (data_object != None and object["num"] == data_object) else False)] if (object_type == "data") else []) + [("size", object_size), ("data", object_data), ("type", object_type), ("hints", object_hints), ("structure", []), ("disassembly1", []), ("disassembly2", [])])) # https://stackoverflow.com/a/32895702
 		disasm["objects"].sort(key=lambda item: item["num"])
 
 	# Preprocess modules: accumulate modules over subsections, accumulate address info over subsections and add to modules, sort
@@ -2127,17 +2306,17 @@ def disassemble_objects(objdump_exec, wdump, outfile_template):
 	for object in disasm["objects"]:
 		if (object["type"] != "code"):
 			continue
-		disassemble_code_object(object, disasm["modules"], disasm["globals"], objdump_exec)
+		disassemble_code_object(object, disasm["modules"], disasm["globals"], objdump_exec, data_object)
 
 	# Disassemble data objects
 	for object in disasm["objects"]:
 		if (object["type"] != "data"):
 			continue
-		disassemble_data_object(object, disasm["modules"], disasm["globals"])
+		disassemble_data_object(object, disasm["modules"], disasm["globals"], data_object)
 
 	# Format disassembly (all objects)
 	for object in disasm["objects"]:
-		generate_formatted_disassembly(object, disasm["globals"])
+		generate_formatted_disassembly(object, disasm["globals"], data_object)
 
 	# Write results to files
 	print_light("Writing disassembly results to files...")
@@ -2167,7 +2346,7 @@ def main():
 	prog_name = "Watcom Decompilation Tool (wcdctool)"
 	prog_desc = "Tool for decompiling protected mode executables created with Watcom toolchain."
 
-	# Process command line
+	# Process command line (1)
 	msg_error = "Invalid command line. Use %s for usage information."
 	msg_usage = "Usage: %s [OPTION]... %s\n\n" + prog_name + "\n" + prog_desc + "\n\nOptions:"
 	cmd_opts = [
@@ -2175,6 +2354,7 @@ def main():
 		{ "type": "normal",	"name": "objdump_exec", "short": "-ode", "long": "--objdump-executable", "arg": "path", "default": "objdump", "help": "Path to objdump executable" },
 		{ "type": "normal", "name": "wdump_output", "short": "-wdo", "long": "--wdump-output", "arg": "file", "help": "Read wdump output from file instead of running wdump" },
 		{ "type": "normal", "name": "wdump_add_output", "short": "-wao", "long": "--wdump-additional-output", "arg": "file", "help": "Read additional wdump output from file" },
+		{ "type": "normal", "name": "data_object", "short": "-do", "long": "--data-object", "arg": "path", "help": "Number of object ds:... references point to" },
 		{ "type": "normal", "name": "outdir", "short": "-o", "long": "--outdir", "arg": "path", "help": "Output directory for generated contents" },
 		{ "type": "switch", "name": "debug", "short": "-d", "long": "--debug", "arg": "path", "help": "Drop to interactive debugger before exiting" },
 		{ "type": "switch", "name": "shell", "short": "-s", "long": "--shell", "arg": "path", "help": "Drop to interactive shell before exiting" },
@@ -2183,6 +2363,14 @@ def main():
 	]
 	parser = ArgumentParser(cmd_opts, msg_error=msg_error, exc_error=2, msg_usage=msg_usage, exc_usage=0)
 	args = parser.parse_args()
+
+	# Process command line (2)
+	if (args.data_object != None):
+		try:
+			args.data_object = int(args.data_object)
+		except ValueError:
+			print_error("Argument for option -do/--data-object is not an integer: %s" % args.data_object)
+			return 2
 
 	# Check command availability
 	if (args.wdump_output == None and shutil.which(args.wdump_exec) == None):
@@ -2236,7 +2424,7 @@ def main():
 	print_normal()
 
 	# Disassemble objects
-	disasm = disassemble_objects(args.objdump_exec, wdump, outfile_template)
+	disasm = disassemble_objects(args.objdump_exec, wdump, outfile_template, args.data_object)
 
 	# Drop to interactive debugger/shell if requested
 	if (args.debug == True or args.shell == True):
