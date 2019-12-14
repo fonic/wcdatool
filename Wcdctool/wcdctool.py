@@ -2393,37 +2393,61 @@ def main():
 	if (wdump == None):
 		return 1
 
-	# Check for and handle prepended DOS/4GW executable
+	# Detect and extract DOS/4G(W) stub / payload
+	# NOTE: this is necessary as wdump will only yield usable results for the payload
 	if (dict_path_exists(wdump, "dos/16m exe header", "data", "offset of possible next spliced .exp")):
 		offset = wdump["dos/16m exe header"]["data"]["offset of possible next spliced .exp"]
 		print_normal()
-		print_light("Input file '%s' has prepended DOS/4GW executable:" % args.infile)
-		print_normal("Offset of next spliced executable: 0x%x" % offset)
+		print_light("Extracting DOS/4G(W) stub / payload:")
+		print_normal("Offset of DOS/4G(W) payload: 0x%x" % offset)
 		try:
-			print_normal("Reading data from input file starting at offset 0x%x..." % offset)
+			print_normal("Opening input file to read data...")
 			with open(args.infile, "rb") as infile:
-				infile.seek(offset)
-				data = infile.read()
-			print_normal("Writing data to temporary file...")
-			tmpfile = tempfile.NamedTemporaryFile(mode="w+b", delete=False)
-			tmpfile.write(data)
-			tmpfile.close()
-			print_normal("Extracted actual executable as '%s' (%d bytes)" % (tmpfile.name, os.path.getsize(tmpfile.name)))
-			print_normal()
-			wdump = wdump_parse_output(tmpfile.name, args.wdump_exec, args.wdump_output, args.wdump_add_output, outfile_template)
-			if (wdump == None):
-				return 1
+				print_normal("Reading DOS/4G(W) stub data (offset 0x0 - 0x%x)..." % (offset-1))
+				stub_data = infile.read(offset)
+				print_normal("Reading DOS/4G(W) payload data (offset 0x%x - EOF)..." % offset)
+				payload_data = infile.read()
 		except Exception as exception:
 			print_error("Error: %s" % str(exception))
 			return 1
-		finally:
-			print_normal()
-			print_light("Input file '%s' has prepended DOS/4GW executable:" % args.infile)
-			print_normal("Removing temporary file...")
-			os.remove(tmpfile.name)
-	print_normal()
+		print_normal("Writing DOS/4G(W) stub data to file (%d bytes)..." % len(stub_data))
+		write_file(outfile_template, "dos4g_stub.exe", stub_data)
+		print_normal("Writing DOS/4G(W) payload data to file (%d bytes)..." % len(payload_data))
+		write_file(outfile_template, "dos4g_payload.exe", payload_data)
+		args.infile = outfile_template % "dos4g_payload.exe"
+		print_normal("Running wdump parser for DOS/4G(W) payload...")
+		print_normal()
+		wdump = wdump_parse_output(args.infile, args.wdump_exec, args.wdump_output, args.wdump_add_output, outfile_template)
+		if (wdump == None):
+			return 1
+
+	# Detect and extract linear executable stub / payload
+	# NOTE: we only do this to allow further examination of the extracted files, they are not used anywhere in this script
+	for section in wdump:
+		if (section.startswith("linear exe header")):
+			if (dict_path_exists(wdump, section, "data", "file offset")):
+				offset = wdump[section]["data"]["file offset"]
+				print_normal()
+				print_light("Extracting linear executable stub / payload:")
+				print_normal("Offset of linear executable payload: 0x%x" % offset)
+				try:
+					print_normal("Opening input file to read data...")
+					with open(args.infile, "rb") as infile:
+						print_normal("Reading linear executable stub data (offset 0x0 - 0x%x)..." % (offset-1))
+						stub_data = infile.read(offset)
+						print_normal("Reading linear executable payload data (offset 0x%x - EOF)..." % offset)
+						payload_data = infile.read()
+				except Exception as exception:
+					print_error("Error: %s" % str(exception))
+					return 1
+				print_normal("Writing linear executable stub data to file (%d bytes)..." % len(stub_data))
+				write_file(outfile_template, "linear_executable_stub.exe", stub_data)
+				print_normal("Writing linear executable payload data to file (%d bytes)..." % len(payload_data))
+				write_file(outfile_template, "linear_executable_payload.bin", payload_data)
+				break
 
 	# Disassemble objects
+	print_normal()
 	disasm = disassemble_objects(args.objdump_exec, wdump, outfile_template, args.data_object)
 
 	# Drop to interactive debugger/shell if requested
