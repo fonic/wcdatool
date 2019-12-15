@@ -1,91 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# -------------------------------------------------------------------------
-#                                                                         -
-#  Watcom Decompilation Tool (wcdctool)                                   -
-#                                                                         -
-#  Created by Fonic (https://github.com/fonic)                            -
-#  Date: 11/25/19 - 11/25/19                                              -
-#  Date: 06/20/19 - 07/30/19                                              -
-#                                                                         -
-# -------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+#                                                                              -
+#  Watcom Decompilation Tool (wcdctool)                                        -
+#                                                                              -
+#  Created by Fonic (https://github.com/fonic)                                 -
+#  Date modified: 12/15/19                                                     -
+#  Date started:  06/20/19                                                     -
+#                                                                              -
+# ------------------------------------------------------------------------------
 
 
 
-# -------------------------------------
-#                                     -
-#  TODO                               -
-#                                     -
-# -------------------------------------
-#
-# - analysis of branches / cs refs / ds refs:
-#   - store pnums in structure items -> ["branches"], ["variables"]; this way, we'll get coherent naming;
-#     currently, e.g. 'ailss_c_variable_1' exists twice (1x in code segment, 1x in data segment)
-#   - better not use 'partial' as type as insert_structure_item check for type 'variable'; instead, create
-#     temporary list of added items and process those afterwards
-#   - check if analysis of branches + cs refs + ds refs can be merged into one step/loop as they are very
-#     similar -> performance gain
-#
-# - modify analysis of branches to match cs/ds refs analysis:
-#   - add globals of type 'code'
-#   - use type 'partial-branch' for structure items
-#
-# - handling of virtual padding must be changed, we need to process virtual padding data as normal data
-#   (to apply hints, to decode variables etc.)
-#   - try adding as normal data before 'Disassemble object data' loop
-#   - see e.g. B0 in object 2 of MK2.EXE -> lies within virtual padding, is not decoded as DWORD
-#   - check if we should change this for code objects as well
-#   - also need to extend hints
-#   -> seems to be done already for data objects (verify)
-#   -> still has to be done for code objects (not easy there)
-#
-#
-#
-# - figure out relocation + fixup stuff -> see le_disasm
-#
-#   - there are two tables: fixup page table, fixup record table:
-#
-#                           Linear EXE Header (OS/2 V2.x) - LE
-#     ==============================================================================
-#     file offset = 00002C90H
-#     ...
-#     offset of fixup page table                        = 00000304H
-#     offset of fixup record table                      = 00000510H
-#     fixup section size                                = 0002741DH
-#
-#     -> offset of fixup page/record table in file: file offset + offset of fixup page/record table
-#        (see http://unavowed.vexillium.org/pub/doc/LE, 'LE Header Information Block Layout')
-#
-#
-#   - fixup page table tells which entries in fixup record table belong to which page, e.g.:
-#
-#                                    Fixup Page Table
-#     ==============================================================================
-#       0:00000000       1:00000554       2:00000969       3:00000CD3
-#       ...
-#
-#     -> bytes 0x00000000-0x00000553 of fixup record table contain entries for page 0
-#     -> bytes 0x00000554-0x00000968 of fixup record table contain entries for page 1
-#     -> ...
-#
-#
-#   - fixup record table contains, well, fixup records; format is described in http://unavowed.vexillium.org/pub/doc/LE, 'LE Header Fixup Record  Table Layout')
-#     -> problem is that records are not of equal/fixed size; size depends on contents of first two bytes (relocation address type, relocation type)
-#     -> we can and should use Python module 'struct' for this
-#
-#
-#
-# - probably rename type 'function' to 'subroutine' -> more general; search & replace for '"function"'
-#
-
-
-
-# -------------------------------------
-#                                     -
-#  Imports                            -
-#                                     -
-# -------------------------------------
+# ------------------------------------------------------------------------------
+#                                                                              -
+#  Imports                                                                     -
+#                                                                              -
+# ------------------------------------------------------------------------------
 
 # Import dependencies
 try:
@@ -109,11 +41,11 @@ if (sys.version_info < (3, 6, 0)):
 
 
 
-# -------------------------------------
-#                                     -
-#  Common Functions                   -
-#                                     -
-# -------------------------------------
+# ------------------------------------------------------------------------------
+#                                                                              -
+#  Functions                                                                   -
+#                                                                              -
+# ------------------------------------------------------------------------------
 
 # Text output / logging
 # NOTE: Plaintext log may be obtained by ignoring 'esc1'+'esc2' of log items;
@@ -264,11 +196,11 @@ def dict_path_exists(var, *keys):
 
 
 
-# -------------------------------------
-#                                     -
-#  Wdump Parser                       -
-#                                     -
-# -------------------------------------
+# ------------------------------------------------------------------------------
+#                                                                              -
+#  Wdump Parser                                                                -
+#                                                                              -
+# ------------------------------------------------------------------------------
 
 # Splits key value pair of wdump output line; wdump format: 'key = value', e.g. 'file offset = 0000F474H'
 # NOTE: whitespace in line needs to be reduced to single characters prior to calling this
@@ -1007,12 +939,11 @@ def wdump_parse_output(infile, wdump_exec, wdump_output, wdump_add_output, outfi
 
 
 
-# -------------------------------------
-#                                     -
-#  Disassembler                       -
-#                                     -
-# -------------------------------------
-
+# ------------------------------------------------------------------------------
+#                                                                              -
+#  Disassembler                                                                -
+#                                                                              -
+# ------------------------------------------------------------------------------
 
 # Splits assembler code line (objdump format)
 # NOTE: handling of hex-only, comment, label, dots and empty lines was used before separating disassembly and disassembly structure; leaving this intact for future reference
@@ -1310,8 +1241,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 	insert_structure_item(structure, OrderedDict([("type", "object start"), ("offset", 0), ("name", "Object %d" % object["num"]), ("label", "object_%d" % object["num"]), ("objnum", object["num"])]))
 
 
-	# -------------------------- former part of 'structure completion' --------------------------
-
+	# ------------------------------------------------------------------------------
+	#  former part of 'structure completion'                                       -
+	# ------------------------------------------------------------------------------
 
 	# Process modules, add them to structure
 	print_normal("Adding modules to structure...")
@@ -1349,8 +1281,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 	print_normal("Added %d functions to structure" % added)
 
 
-	# -------------------------- initial disassembly --------------------------
-
+	# ------------------------------------------------------------------------------
+	#  initial disassembly                                                         -
+	# ------------------------------------------------------------------------------
 
 	# Write object data to temporary file for objdump (objdump can only read from files)
 	print_normal("Writing object data to temporary file...")
@@ -1464,8 +1397,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 	insert_structure_item(structure, OrderedDict([("type", "object end"), ("offset", object["virtual memory size"] if (object["virtual memory size"] > object["size"]) else object["size"]), ("name", "Object %d" % object["num"]), ("label", "object_%d" % object["num"]), ("objnum", object["num"])]))
 
 
-	# ----------------------------- branch analysis (call/jump commands) -----------------------------
-
+	# ------------------------------------------------------------------------------
+	#  branch analysis (call/jump commands)                                        -
+	# ------------------------------------------------------------------------------
 
 	# Analyze branches (i.e. target addresses of call/jump instructions), add them to structure
 	print_normal("Analyzing branches...")
@@ -1516,8 +1450,8 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 			known_addresses[address] = [ item ]
 			added += 1
 
+	# Print results
 	print_normal("Added %d branches to structure" % added)
-
 
 	# Process structure, name branches
 	# NOTE: structure has to be sorted for this to work correctly!
@@ -1543,8 +1477,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 	print_normal("Named %d branches" % named)
 
 
-	# -------------------------- code segment reference ('cs:0x...') analysis --------------------------
-
+	# ------------------------------------------------------------------------------
+	#  code segment reference ('cs:0x...') analysis                                -
+	# ------------------------------------------------------------------------------
 
 	# Analyze code segment references (i.e. 'cs:0x...' occurences in code), determine access size, add missing references to globals
 	# NOTE: this modifies globals, not structure!
@@ -1633,9 +1568,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 	# Sort globals
 	globals.sort(key=lambda item: (item["segment"], item["offset"]))
 
+	# Print results
 	print_normal("Added %d globals for code segment references" % added)
 	print_normal("Added %d structure items for code segment references" % added)
-
 
 	# Process structure, complete partial code segment variables (i.e. fill in all missing information)
 	# NOTE: structure has to be sorted for this to work correctly!
@@ -1678,8 +1613,9 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 	print_normal("Completed %d partial code segment variables" % completed)
 
 
-	# -------------------------- data segment reference ('ds:0x...') analysis --------------------------
-
+	# ------------------------------------------------------------------------------
+	#  data segment reference ('ds:0x...') analysis                                -
+	# ------------------------------------------------------------------------------
 
 	# We can only do this if we have a designated data object (without, we have no way of knowing which object 'ds:...' references point to)
 	if (data_object != None):
@@ -1778,15 +1714,15 @@ def disassemble_code_object(object, modules, globals, objdump_exec, data_object)
 		print_warn("No data object specified, skipping data segment reference analysis.")
 
 
-	# ------------------------------------------- done -------------------------------------------------
-
+	# ------------------------------------------------------------------------------
+	#  done                                                                        -
+	# ------------------------------------------------------------------------------
 
 	# Print stats, store results
 	print_normal("Disassembly: %d lines, %d bytes" % (len(disassembly), len(str.join(os.linesep, disassembly))))
 	print_structure_stats(structure)
 	object["disassembly1"] = disassembly
 	object["structure"] = structure
-
 
 
 # Disassembles data object
@@ -1831,7 +1767,6 @@ def disassemble_data_object(object, modules, globals, data_object):
 		added += 1
 	print_normal("Added %d variables to structure" % added)
 
-
 	# Special handling if object is designated data object
 	if (object["num"] == data_object):
 
@@ -1845,7 +1780,6 @@ def disassemble_data_object(object, modules, globals, data_object):
 			insert_structure_item(structure, OrderedDict([("type", "partial-ds-var"), ("offset", item["offset"]), ("name", item["name"]), ("label", item["name"])] + ([("sizes", item["sizes"])] if "sizes" in item else []) + [("global", item)]))
 			added += 1
 		print_normal("Added %d unassigned variables to structure" % added)
-
 
 		# Process structure, complete partial data segment variables (i.e. fill in all missing information)
 		# NOTE: structure has to be sorted for this to work correctly!
@@ -1884,7 +1818,6 @@ def disassemble_data_object(object, modules, globals, data_object):
 		# Globals can now be safely sorted as there should be no missing information left at this point (i.e. no 'None')
 		globals.sort(key=lambda item: (item["segment"], item["offset"]))
 
-
 	# TESTING Add virtual padding data to object data now so it is processed like normal data (important for hints, variables etc.)
 	if (object["size"] < object["virtual memory size"]):
 		print_normal("Appending virtual size padding data (%d bytes)..." % (object["virtual memory size"] - object["size"]))
@@ -1892,7 +1825,6 @@ def disassemble_data_object(object, modules, globals, data_object):
 		insert_structure_item(structure, OrderedDict([("type", "virtual padding end"), ("offset", object["virtual memory size"]), ("name", "Virtual padding"), ("label", "virtual_padding")]))
 		object["data"] += bytes(object["virtual memory size"] - object["size"])
 		object["size"] = len(object["data"])
-
 
 	# Disassemble object data
 	print_normal("Disassembling data from offset 0x%x to offset 0x%x..." % (0, object["size"]-1))
@@ -1989,7 +1921,6 @@ def disassemble_data_object(object, modules, globals, data_object):
 		disassembly.append(generate_define_byte(offset, value, comment=True))
 		offset += 1
 
-
 	# If object's actual size < virtual size, append padding data
 	#if (object["size"] < object["virtual memory size"]):
 	#	print_normal("Appending virtual size padding data (%d bytes)..." % (object["virtual memory size"] - object["size"]))
@@ -2006,7 +1937,6 @@ def disassemble_data_object(object, modules, globals, data_object):
 	print_structure_stats(structure)
 	object["disassembly1"] = disassembly
 	object["structure"] = structure
-
 
 
 # Generates formatted disassembly, i.e. plain disassembly + disassembly structure -> formatted disassembly
@@ -2206,8 +2136,7 @@ def generate_formatted_disassembly(object, globals, data_object):
 	object["disassembly2"] = disassembly
 
 
-
-# tbd
+# disassembler main
 def disassemble_objects(objdump_exec, wdump, outfile_template, data_object):
 	print_light("Disassembling objects:")
 	disasm = OrderedDict([("objects", []), ("modules", []), ("globals", [])])
@@ -2335,11 +2264,11 @@ def disassemble_objects(objdump_exec, wdump, outfile_template, data_object):
 
 
 
-# -------------------------------------
-#                                     -
-#  Main                               -
-#                                     -
-# -------------------------------------
+# ------------------------------------------------------------------------------
+#                                                                              -
+#  Main                                                                        -
+#                                                                              -
+# ------------------------------------------------------------------------------
 
 # Main function
 def main():
