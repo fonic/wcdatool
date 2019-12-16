@@ -62,7 +62,7 @@ There are multiple ways to use *wcdctool*, but this should get you started:
    # cd wcdctool/Executables
    # ./x_process_all.sh
    ```
-   **NOTE:** for the executables listed in 4., this will take ~ 5 min. and generate ~ 1 GB worth of data.
+   **NOTE:** for the executables listed in 4., this will take ~ 5-10 min. and generate ~ 1 GB worth of data.
 
 6. Have a look at the results in `wcdctool/Output`.
 
