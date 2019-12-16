@@ -93,12 +93,12 @@ def generate_pprint(var, level=0, indent="    ", maxlevel=None, technical=True, 
 
 	# Recursion limit reached?
 	if (maxlevel != None and level > maxlevel):
-		result.append("%s<recursion limit>" % (indent * level))
+		#result.append("%s<recursion limit reached>" % (indent * level))
 		return result
 
 	# Current variable excluded?
 	if (id(var) in exclude_ids):
-		result.append("%s<excluded item>" % (indent * level))
+		#result.append("%s<current item is excluded>" % (indent * level))
 		return result
 
 	# Determine keys to process; this exploits the fact that dicts and tuples/lists are essentially the same,
@@ -219,24 +219,24 @@ def wdump_split_keyval(line):
 # Decodes wdump section data
 def wdump_decode_data(section):
 
-	#                                DOS EXE Header
-	#==============================================================================
-	#length of load module mod 200H                       =     008CH
-	#number of 200H pages in load module                  =     0017H
-	#...
+	#                                 DOS EXE Header
+	# ==============================================================================
+	# length of load module mod 200H                       =     008CH
+	# number of 200H pages in load module                  =     0017H
+	# ...
 	#
-	#segment:offset
-	#  0000:0020   0000:0028   0000:098C   0000:0994   0000:09A0   0000:09A6
-	#  0000:09AA   0000:09AE   0000:09B4   0000:09B6   0000:09F1   01BD:0000
-	#  ...
+	# segment:offset
+	#   0000:0020   0000:0028   0000:098C   0000:0994   0000:09A0   0000:09A6
+	#   0000:09AA   0000:09AE   0000:09B4   0000:09B6   0000:09F1   01BD:0000
+	#   ...
 	#
-	#load module =
-	#0000:  CC EB FD 90 90 90 90 00  53 52 56 57 B8 22 00 E8            SRVW "
-	#0010:  AA 00 85 C0 74 24 BF EC  03 89 C6 57 AC 88 05 47        t$     W   G
-	#0020:  3C 00 75 F8 5F 89 F8 BA  31 00 E8 EC 00 89 F8 E8    < u _   1
-	#...
+	# load module =
+	# 0000:  CC EB FD 90 90 90 90 00  53 52 56 57 B8 22 00 E8            SRVW "
+	# 0010:  AA 00 85 C0 74 24 BF EC  03 89 C6 57 AC 88 05 47        t$     W   G
+	# 0020:  3C 00 75 F8 5F 89 F8 BA  31 00 E8 EC 00 89 F8 E8    < u _   1
+	# ...
 	#
-	#Additional file data follows DOS executable.
+	# Additional file data follows DOS executable.
 	#
 	if (section["name"].startswith("DOS EXE Header")):
 		decoded_data = OrderedDict()
@@ -251,37 +251,37 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                           DOS/16M EXE Header - BW
-	#==============================================================================
-	#file offset = 0000F474H
+	#                            DOS/16M EXE Header - BW
+	# ==============================================================================
+	# file offset = 0000F474H
 	#
-	#                              DOS/16M EXE Header
-	#==============================================================================
-	#length of load module mod 200H                       =     01E0H
-	#number of 200H pages in load module                  =     00B8H
-	#...
-	#GLU version                                          = 2. 72
-	#original name: 4GWPRO.EXP
+	#                               DOS/16M EXE Header
+	# ==============================================================================
+	# length of load module mod 200H                       =     01E0H
+	# number of 200H pages in load module                  =     00B8H
+	# ...
+	# GLU version                                          = 2. 72
+	# original name: 4GWPRO.EXP
 	#
-	#GDT selectors:
+	# GDT selectors:
 	#                                 Size in    Size in
-	#Sel #    Access    File offset   File       Memory     DPL    Present    Flags
-	#-----    ------    -----------   -------    -------    ---    -------    -----
-	#0080      ER         00F564       05F90      05F90     0         1
-	#0088      ER         0154F4       0C1C0      0C1C0     0         1
-	#...
+	# Sel #    Access    File offset   File       Memory     DPL    Present    Flags
+	# -----    ------    -----------   -------    -------    ---    -------    -----
+	# 0080      ER         00F564       05F90      05F90     0         1
+	# 0088      ER         0154F4       0C1C0      0C1C0     0         1
+	# ...
 	#
-	#Relocations selector:offset
+	# Relocations selector:offset
 	#
-	#0080:054A 0080:057B 0080:05B9 0080:073F
-	#0080:079C 0080:095C 0080:0B76 0080:0BF9
-	#...
+	# 0080:054A 0080:057B 0080:05B9 0080:073F
+	# 0080:079C 0080:095C 0080:0B76 0080:0BF9
+	# ...
 	#
-	#Load selector = 0080
+	# Load selector = 0080
 	#
-	#0000:  E8 6D 05 00 E8 69 05 01  E8 65 05 02 E8 61 05 03     m   i   e   a
-	#0010:  E8 5D 05 04 E8 59 05 05  E8 55 05 06 E8 51 05 07     ]   Y   U   Q
-	#...
+	# 0000:  E8 6D 05 00 E8 69 05 01  E8 65 05 02 E8 61 05 03     m   i   e   a
+	# 0010:  E8 5D 05 04 E8 59 05 05  E8 55 05 06 E8 51 05 07     ]   Y   U   Q
+	# ...
 	# NOTE: everything after 'GDT selectors:' is ignored
 	elif (section["name"].startswith("DOS/16M EXE Header")):
 		decoded_data = OrderedDict()
@@ -300,16 +300,16 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                      Linear EXE Header (OS/2 V2.x) - LE
-	#==============================================================================
-	#file offset = 00002C90H
+	#                       Linear EXE Header (OS/2 V2.x) - LE
+	# ==============================================================================
+	# file offset = 00002C90H
 	#
-	#byte order (0==little endian, 1==big endian)      =       00H
-	#word order       "                "               =       00H
-	#...
-	#Module Flags = PROGRAM | WINDOWCOMPAT
+	# byte order (0==little endian, 1==big endian)      =       00H
+	# word order       "                "               =       00H
+	# ...
+	# Module Flags = PROGRAM | WINDOWCOMPAT
 	#
-	elif (section["name"].startswith("Linear EXE Header")):
+	elif (section["name"].startswith("Linear EXE Header (OS/2 V2.x) - LE")):
 		decoded_data = OrderedDict()
 		for line in section["data"]:
 			line2 = str.join(" ", line.split())
@@ -320,32 +320,32 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                                 Object Table
-	#==============================================================================
-	#object  1: virtual memory size             = 0003B2D5H
-	#          relocation base address          = 00010000H
-	#          object flag bits                 = 00002045H
-	#          object page table index          = 00000001H
-	#          # of object page table entries   = 0000003CH
-	#          reserved                         = 00000000H
-	#          flags = READABLE|EXECUTABLE|PRELOAD|BIG
-	#    page #   1  map page = 000001H file ofs = 0002A400H flgs = 00H Valid
+	#                                  Object Table
+	# ==============================================================================
+	# object  1: virtual memory size             = 0003B2D5H
+	#           relocation base address          = 00010000H
+	#           object flag bits                 = 00002045H
+	#           object page table index          = 00000001H
+	#           # of object page table entries   = 0000003CH
+	#           reserved                         = 00000000H
+	#           flags = READABLE|EXECUTABLE|PRELOAD|BIG
+	#     page #   1  map page = 000001H file ofs = 0002A400H flgs = 00H Valid
 	#
-	#segment # 1   offset: 0002A400
-	#===========
-	#0000:  CC EB FD 90 90 90 90 90  90 90 90 90 90 90 90 90
-	#0010:  53 51 52 56 57 55 8B 1D  48 98 04 00 89 C6 83 3D    SQRVWU  H      =
-	#...
-	#0FF0:  04 00 E8 AA BA 02 00 83  C4 0C 89 F8 E8 C2 BA 02
+	# segment # 1   offset: 0002A400
+	# ===========
+	# 0000:  CC EB FD 90 90 90 90 90  90 90 90 90 90 90 90 90
+	# 0010:  53 51 52 56 57 55 8B 1D  48 98 04 00 89 C6 83 3D    SQRVWU  H      =
+	# ...
+	# 0FF0:  04 00 E8 AA BA 02 00 83  C4 0C 89 F8 E8 C2 BA 02
 	#
 	#
-	#    page #   2  map page = 000002H file ofs = 0002B400H flgs = 00H Valid
+	#     page #   2  map page = 000002H file ofs = 0002B400H flgs = 00H Valid
 	#
-	#segment # 2   offset: 0002B400
-	#===========
-	#0000:  00 80 BC 24 C4 00 00 00  00 0F 84 51 01 00 00 8B       $       Q
-	#0010:  84 24 C0 00 00 00 BF 01  00 00 00 8B 00 8B 1D A4     $
-	#...
+	# segment # 2   offset: 0002B400
+	# ===========
+	# 0000:  00 80 BC 24 C4 00 00 00  00 0F 84 51 01 00 00 8B       $       Q
+	# 0010:  84 24 C0 00 00 00 BF 01  00 00 00 8B 00 8B 1D A4     $
+	# ...
 	elif (section["name"].startswith("Object Table")):
 		decoded_data = OrderedDict()
 		current_object = None
@@ -414,20 +414,20 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                             Resident Names Table
-	#==============================================================================
-	#ordinal 0000: mk1
+	#                              Resident Names Table
+	# ==============================================================================
+	# ordinal 0000: mk1
 	#
 	elif (section["name"].startswith("Resident Names Table")):
 		decoded_data = str.join("", section["data"])
 
 
-	#                               Fixup Page Table
-	#==============================================================================
-	#  0:00000000       1:00000554       2:00000969       3:00000CD3
-	#  4:00000F80       5:00001849       6:00002292       7:00002967
-	#  ...
-	# 28:0002716E      29:00027192      30:00027210
+	#                                Fixup Page Table
+	# ==============================================================================
+	#   0:00000000       1:00000554       2:00000969       3:00000CD3
+	#   4:00000F80       5:00001849       6:00002292       7:00002967
+	#   ...
+	#  28:0002716E      29:00027192      30:00027210
 	#
 	elif (section["name"].startswith("Fixup Page Table")):
 		decoded_data = OrderedDict()
@@ -441,15 +441,15 @@ def wdump_decode_data(section):
 				decoded_data[int(data[0])] = int(data[1], 16)
 
 
-	#                              Fixup Record Table
-	#==============================================================================
-	#Source  Target
-	#  type  flags
-	#  ====  ====
-	#   07    10   src off = 09B7   object #    = 02   target off       = 000498BA
-	#   07    10   src off = 09FF   object #    = 02   target off       = 000498B0
-	#   ...
-	#   07    10   src off = 07DC   object #    = 01   target off       = 0003B2AC
+	#                               Fixup Record Table
+	# ==============================================================================
+	# Source  Target
+	#   type  flags
+	#   ====  ====
+	#    07    10   src off = 09B7   object #    = 02   target off       = 000498BA
+	#    07    10   src off = 09FF   object #    = 02   target off       = 000498B0
+	#    ...
+	#    07    10   src off = 07DC   object #    = 01   target off       = 0003B2AC
 	#
 	# NOTE: not sure if source type, target flags and object # are decimal or hex; all decimal for now
 	elif (section["name"].startswith("Fixup Record Table")):
@@ -468,35 +468,35 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                           Nonresident Names Table
-	#==============================================================================
+	#                            Nonresident Names Table
+	# ==============================================================================
 	#
 	# NOTE: not spotted with any data yet
 	elif (section["name"].startswith("Nonresident Names Table")):
 		decoded_data = str.join("", section["data"])
 
 
-	#                              Master Debug Info
-	#==============================================================================
-	#EXE major                 =       03H
-	#EXE minor                 =       00H
-	#...
+	#                               Master Debug Info
+	# ==============================================================================
+	# EXE major                 =       03H
+	# EXE minor                 =       00H
+	# ...
 	#
-	#Languages
-	#=========
-	#C
-	#CPP
+	# Languages
+	# =========
+	# C
+	# CPP
 	#
-	#Segments
-	#========
-	#0001
-	#0002
+	# Segments
+	# ========
+	# 0001
+	# 0002
 	#
-	#Section 0 (off=000ABC09)
-	#=========================
-	#  Module info offset   = 00033BDEH
-	#  Global info offset   = 000351FDH
-	#  ...
+	# Section 0 (off=000ABC09)
+	# =========================
+	#   Module info offset   = 00033BDEH
+	#   Global info offset   = 000351FDH
+	#   ...
 	elif (section["name"].startswith("Master Debug Info")):
 		decoded_data = OrderedDict()
 		target = decoded_data
@@ -538,52 +538,52 @@ def wdump_decode_data(section):
 				print_warn("invalid data: '%s'" % line2)
 
 
-	#                           Module Info (section 0)
-	#==============================================================================
-	#  0) Name:   D:\IBM\MKTRIL\SOURCE\input.c
-	#     Language is C
-	#     Locals: num = 1, offset = 00000012H
-	#     Types:  num = 1, offset = 00000062H
-	#     Lines:  num = 1, offset = 000000B2H
+	#                            Module Info (section 0)
+	# ==============================================================================
+	#   0) Name:   D:\IBM\MKTRIL\SOURCE\input.c
+	#      Language is C
+	#      Locals: num = 1, offset = 00000012H
+	#      Types:  num = 1, offset = 00000062H
+	#      Lines:  num = 1, offset = 000000B2H
 	#
-	#   *** Locals ***
-	#   ==============
-	#      Data 0:  offset 00000236
-	#        0000: MODULE_386
-	#          "JoyThresholdY" addr = 0003:00059610,  type = 81
-	#        0016: MODULE_386
-	#          "JoyThresholdX" addr = 0003:00059618,  type = 82
-	#        ...
-	#        03BB: LOCAL
-	#          address: BP_OFFSET_BYTE( C0 )
-	#          name = "outregs",  type = 115
+	#    *** Locals ***
+	#    ==============
+	#       Data 0:  offset 00000236
+	#         0000: MODULE_386
+	#           "JoyThresholdY" addr = 0003:00059610,  type = 81
+	#         0016: MODULE_386
+	#           "JoyThresholdX" addr = 0003:00059618,  type = 82
+	#         ...
+	#         03BB: LOCAL
+	#           address: BP_OFFSET_BYTE( C0 )
+	#           name = "outregs",  type = 115
 	#
-	#   *** Line Numbers ***
-	#   ====================
-	#      1 offset entries:
-	#        offset 0 = 00010894H
-	#        offset 1 = 00010EEEH
-	#      -------------------------------------
-	#      Data 0: offset 00010894H, addr info off = 0000000EH, num = 32
-	#        number =   93,  code offset = 00000008H
-	#        number =  112,  code offset = 00000016H
-	#        ...
-	#        number =  172,  code offset = 0000019CH
-	#      -------------------------------------
-	#      Data 0: offset 00010894H, addr info off = 0000000EH, num = 32
-	#        number =  174,  code offset = 000001A6H
-	#        number =  176,  code offset = 000001BBH
-	#        ...
+	#    *** Line Numbers ***
+	#    ====================
+	#       1 offset entries:
+	#         offset 0 = 00010894H
+	#         offset 1 = 00010EEEH
+	#       -------------------------------------
+	#       Data 0: offset 00010894H, addr info off = 0000000EH, num = 32
+	#         number =   93,  code offset = 00000008H
+	#         number =  112,  code offset = 00000016H
+	#         ...
+	#         number =  172,  code offset = 0000019CH
+	#       -------------------------------------
+	#       Data 0: offset 00010894H, addr info off = 0000000EH, num = 32
+	#         number =  174,  code offset = 000001A6H
+	#         number =  176,  code offset = 000001BBH
+	#         ...
 	#
-	#    *** Types ***
-	#    =============
-	#      Data 0:  offset 00007170
-	#        0000: cue table offset=00000513
-	#        0006: SCOPE(1)
-	#          "struct"
-	#        ...
-	#        0509: NAME(115)
-	#          "REGS"  type idx = 114  scope idx = 2
+	#     *** Types ***
+	#     =============
+	#       Data 0:  offset 00007170
+	#         0000: cue table offset=00000513
+	#         0006: SCOPE(1)
+	#           "struct"
+	#         ...
+	#         0509: NAME(115)
+	#           "REGS"  type idx = 114  scope idx = 2
 	#
 	# NOTE: 'Types' appears after 'Line Numbers', contrary to order at beginning
 	# NOTE: 'num' in this section means 'count', e.g. 'Lines:  num = 1, ...' means there's one 'Lines Numbers' section
@@ -633,16 +633,16 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                           Global Info (section 0)
-	#==============================================================================
-	#  Name:  PackJoyButtons_
-	#    address      = 0001:00000466
-	#    module index = 0
-	#    kind:          (code)
-	#  Name:  _pTopOfHeap
-	#    address      = 0003:0005983C
-	#    module index = 100
-	#    kind:          (static pubdef) (data)
+	#                            Global Info (section 0)
+	# ==============================================================================
+	#   Name:  PackJoyButtons_
+	#     address      = 0001:00000466
+	#     module index = 0
+	#     kind:          (code)
+	#   Name:  _pTopOfHeap
+	#     address      = 0003:0005983C
+	#     module index = 100
+	#     kind:          (static pubdef) (data)
 	# NOTE: 'segment' here seems to correspond to 'object' for Linear Executables
 	# NOTE: not exactly sure what global names like 'W?smp$n[]pn$_SAMPLE$$' mean; for sure is that name is between '?' and '$', i.e. 'smp' in this example
 	elif (section["name"].startswith("Global Info")):
@@ -691,16 +691,16 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                            Addr Info (section 0)
-	#==============================================================================
-	# Base:  fileoff = 00000000H   seg = 0001H,  off = 00000000H
-	#     0) fileoff = 00000008H,  Size = 00000010H @00000000H,  mod_index = 75
-	#     1) fileoff = 0000000EH,  Size = 00003921H @00000010H,  mod_index = 0
-	#     ...
-	# Base:  fileoff = 000003E0H   seg = 0002H,  off = 00000000H
-	#     0) fileoff = 000003E8H,  Size = 00000004H @00000000H,  mod_index = 75
-	#     1) fileoff = 000003EEH,  Size = 000006F0H @00000004H,  mod_index = 0
-	#     ...
+	#                             Addr Info (section 0)
+	# ==============================================================================
+	#  Base:  fileoff = 00000000H   seg = 0001H,  off = 00000000H
+	#      0) fileoff = 00000008H,  Size = 00000010H @00000000H,  mod_index = 75
+	#      1) fileoff = 0000000EH,  Size = 00003921H @00000010H,  mod_index = 0
+	#      ...
+	#  Base:  fileoff = 000003E0H   seg = 0002H,  off = 00000000H
+	#      0) fileoff = 000003E8H,  Size = 00000004H @00000000H,  mod_index = 75
+	#      1) fileoff = 000003EEH,  Size = 000006F0H @00000004H,  mod_index = 0
+	#      ...
 	# NOTE: '@[0-9a-fA-F]H' is offset of module within segment
 	# NOTE: 'segment' here seems to correspond to 'object' for Linear Executables
 	elif (section["name"].startswith("Addr Info")):
@@ -732,16 +732,16 @@ def wdump_decode_data(section):
 			print_warn("invalid data: '%s'" % line2)
 
 
-	#                                 Object Hints
-	#==============================================================================
-	#  Object 1:
-	#    0) offset = 00003931H, size = 00000008H, type = data, subtype = dwords, comment = Presumably two DWORDs
-	#    1) offset = 0002CCFAH, size = 00000076H, type = data, subtype = string, comment = Watcom copyright notice
-	#    ...
-	#  Object 2:
-	#    0) offset = 00000004H, size = 000006F0H, type = data, subtype = strings, comment = Strings
-	#    1) offset = 00009A18H, size = 00000A1CH, type = data, subtype = auto, comment = Strings (auto-detection)
-	#    ...
+	#                                  Object Hints
+	# ==============================================================================
+	#   Object 1:
+	#     0) offset = 00003931H, size = 00000008H, type = data, subtype = dwords, comment = Presumably two DWORDs
+	#     1) offset = 0002CCFAH, size = 00000076H, type = data, subtype = string, comment = Watcom copyright notice
+	#     ...
+	#   Object 2:
+	#     0) offset = 00000004H, size = 000006F0H, type = data, subtype = strings, comment = Strings
+	#     1) offset = 00009A18H, size = 00000A1CH, type = data, subtype = auto, comment = Strings (auto-detection)
+	#     ...
 	# NOTE: not native wdump, added specifically for wcdctool to support user-specified object hints to aid disassembly
 	# NOTE: 'comment' has to be last (see special handling below)
 	elif (section["name"].startswith("Object Hints")):
@@ -808,8 +808,8 @@ def wdump_decode_data(section):
 			print_warn("invalid entry: '%s'" % line2)
 
 
-	#                             <Unknown section>
-	#==============================================================================
+	#                              <Unknown section>
+	# ==============================================================================
 	else:
 		print_warn("no decode rule for section '%s'" % section["name"])
 		decoded_data = section["data"]
@@ -820,15 +820,15 @@ def wdump_decode_data(section):
 
 
 # Parses wdump output, returns parsed representation of output
-def wdump_parse_output(infile, wdump_exec, wdump_output, wdump_add_output, outfile_template):
+def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, outfile_template):
 	print_light("Parsing wdump output:")
 
 	# Obtain wdump output
 	output = []
 	if (wdump_output == None):
 		# Run wdump as subprocess, fetch output (NOTE: order of wdump arguments is important, '-a', '-Dx' won't work!)
-		print_normal("Generating output for file '%s'..." % infile)
-		command = (wdump_exec, "-Dx", "-a", infile)
+		print_normal("Generating output for file '%s'..." % input_file)
+		command = (wdump_exec, "-Dx", "-a", input_file)
 		print_normal("Running command '%s'..." % str.join(" ", command))
 		try:
 			sub_process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -1904,7 +1904,7 @@ def disassemble_data_object(object, modules, globals, data_object):
 				data_size = structure[struct_index]["offset"] - offset
 				if (data_size > 0):
 					while (data_size > 1 and not data_size in size_to_type):
-						data_size = data_size - 1
+						data_size -= 1
 					data_type = size_to_type[data_size]
 				else:
 					print_error("[should-never-occur] Something is seriously wrong with data size: %d" % data_size)
@@ -2137,23 +2137,20 @@ def generate_formatted_disassembly(object, globals, data_object):
 
 
 # disassembler main
-def disassemble_objects(objdump_exec, wdump, outfile_template, data_object):
+def disassemble_objects(objdump_exec, wdump, data_object, outfile_template):
 	print_light("Disassembling objects:")
 	disasm = OrderedDict([("objects", []), ("modules", []), ("globals", [])])
 
 
 	# TODO: put this after 'preprocess objects'; set 'automatic data object' to 'false' in preprocess, then set it to true here for data object
-	#       -> makes life easier as we can use disasm["objects"] to check data object
+	#       -> makes life easier as we can use disasm["objects"] for data object verification
 
 	# If data object was not specified by user on command line, try to locate automatic data object hint in wdump data
 	if (data_object == None):
 		print_normal("Locating automatic data object hint...")
-		for section in wdump:
-			if (section.startswith("linear exe header")):
-				if ("object # for automatic data object" in wdump[section]["data"]):
-					data_object = wdump[section]["data"]["object # for automatic data object"]
-					print_normal("Located automatic data object hint: object %d" % data_object)
-					break
+		if (dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "object # for automatic data object")):
+			data_object = wdump["linear exe header (os/2 v2.x) - le"]["data"]["object # for automatic data object"]
+			print_normal("Located automatic data object hint: object %d" % data_object)
 		if (data_object == None):
 			print_warn("Failed to locate automatic data object hint")
 
@@ -2178,6 +2175,7 @@ def disassemble_objects(objdump_exec, wdump, outfile_template, data_object):
 
 
 	# Preprocess objects: accumulate data over pages/segments, determine size, determine type, add hints, add flag for automatic data object, sort
+	# TODO: this should be the perfect place to process/apply fixups
 	if ("object table" in wdump):
 		print_normal("Preprocessing objects...")
 		for object in wdump["object table"]["data"].values():
@@ -2251,7 +2249,7 @@ def disassemble_objects(objdump_exec, wdump, outfile_template, data_object):
 	print_light("Writing disassembly results to files...")
 	write_file(outfile_template, "disasm_data.txt", generate_pprint(disasm))
 	for object in disasm["objects"]:
-		write_file(outfile_template, "object_%d_binary_data.bin" % object["num"], object["data"])
+		write_file(outfile_template, "object_%d_data.bin" % object["num"], object["data"])
 		write_file(outfile_template, "object_%d_disassembly_structure.txt" % object["num"], generate_pprint(object["structure"]))
 		write_file(outfile_template, "object_%d_disassembly_plain.asm" % object["num"], object["disassembly1"])
 		write_file(outfile_template, "object_%d_disassembly_formatted.asm" % object["num"], object["disassembly2"])
@@ -2288,7 +2286,7 @@ def main():
 		{ "type": "switch", "name": "debug", "short": "-d", "long": "--debug", "arg": "path", "help": "Drop to interactive debugger before exiting" },
 		{ "type": "switch", "name": "shell", "short": "-s", "long": "--shell", "arg": "path", "help": "Drop to interactive shell before exiting" },
 		{ "type": "help", "name": "help", "short": "-h", "long": "--help", "help": "Display this message" },
-		{ "type": "positional", "name": "infile", "display": "file", "nargs": 1, "help": "File" },
+		{ "type": "positional", "name": "input_file", "display": "file", "nargs": 1, "help": "Input file" },
 	]
 	parser = ArgumentParser(cmd_opts, msg_error=msg_error, exc_error=2, msg_usage=msg_usage, exc_usage=0)
 	args = parser.parse_args()
@@ -2313,12 +2311,12 @@ def main():
 	print_light(prog_name)
 	print_normal()
 
-	# Generate outfile template
+	# Generate output file template
 	outfile_template = args.outdir + os.path.sep if (args.outdir != None) else ""
-	outfile_template += os.path.basename(args.infile) + "_%s"
+	outfile_template += os.path.basename(args.input_file) + "_%s"
 
 	# Parse wdump output
-	wdump = wdump_parse_output(args.infile, args.wdump_exec, args.wdump_output, args.wdump_add_output, outfile_template)
+	wdump = wdump_parse_output(args.input_file, args.wdump_exec, args.wdump_output, args.wdump_add_output, outfile_template)
 	if (wdump == None):
 		return 1
 
@@ -2331,7 +2329,7 @@ def main():
 		print_normal("Offset of DOS/4G(W) payload: 0x%x" % offset)
 		try:
 			print_normal("Opening input file to read data...")
-			with open(args.infile, "rb") as infile:
+			with open(args.input_file, "rb") as infile:
 				print_normal("Reading DOS/4G(W) stub data (offset 0x0 - 0x%x)..." % (offset-1))
 				stub_data = infile.read(offset)
 				print_normal("Reading DOS/4G(W) payload data (offset 0x%x - EOF)..." % offset)
@@ -2343,47 +2341,44 @@ def main():
 		write_file(outfile_template, "dos4g_stub.exe", stub_data)
 		print_normal("Writing DOS/4G(W) payload data to file (%d bytes)..." % len(payload_data))
 		write_file(outfile_template, "dos4g_payload.exe", payload_data)
-		args.infile = outfile_template % "dos4g_payload.exe"
+		args.input_file = outfile_template % "dos4g_payload.exe"
 		print_normal("Running wdump parser for DOS/4G(W) payload...")
 		print_normal()
-		wdump = wdump_parse_output(args.infile, args.wdump_exec, args.wdump_output, args.wdump_add_output, outfile_template)
+		wdump = wdump_parse_output(args.input_file, args.wdump_exec, args.wdump_output, args.wdump_add_output, outfile_template)
 		if (wdump == None):
 			return 1
 
 	# Detect and extract linear executable stub / payload
 	# NOTE: we only do this to allow further examination of the extracted files, they are not used anywhere in this script
-	for section in wdump:
-		if (section.startswith("linear exe header")):
-			if (dict_path_exists(wdump, section, "data", "file offset")):
-				offset = wdump[section]["data"]["file offset"]
-				print_normal()
-				print_light("Extracting linear executable stub / payload:")
-				print_normal("Offset of linear executable payload: 0x%x" % offset)
-				try:
-					print_normal("Opening input file to read data...")
-					with open(args.infile, "rb") as infile:
-						print_normal("Reading linear executable stub data (offset 0x0 - 0x%x)..." % (offset-1))
-						stub_data = infile.read(offset)
-						print_normal("Reading linear executable payload data (offset 0x%x - EOF)..." % offset)
-						payload_data = infile.read()
-				except Exception as exception:
-					print_error("Error: %s" % str(exception))
-					return 1
-				print_normal("Writing linear executable stub data to file (%d bytes)..." % len(stub_data))
-				write_file(outfile_template, "linear_executable_stub.exe", stub_data)
-				print_normal("Writing linear executable payload data to file (%d bytes)..." % len(payload_data))
-				write_file(outfile_template, "linear_executable_payload.bin", payload_data)
-				break
+	if (dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "file offset")):
+		offset = wdump["linear exe header (os/2 v2.x) - le"]["data"]["file offset"]
+		print_normal()
+		print_light("Extracting linear executable stub / payload:")
+		print_normal("Offset of linear executable payload: 0x%x" % offset)
+		try:
+			print_normal("Opening input file to read data...")
+			with open(args.input_file, "rb") as infile:
+				print_normal("Reading linear executable stub data (offset 0x0 - 0x%x)..." % (offset-1))
+				stub_data = infile.read(offset)
+				print_normal("Reading linear executable payload data (offset 0x%x - EOF)..." % offset)
+				payload_data = infile.read()
+		except Exception as exception:
+			print_error("Error: %s" % str(exception))
+			return 1
+		print_normal("Writing linear executable stub data to file (%d bytes)..." % len(stub_data))
+		write_file(outfile_template, "linear_executable_stub.exe", stub_data)
+		print_normal("Writing linear executable payload data to file (%d bytes)..." % len(payload_data))
+		write_file(outfile_template, "linear_executable_payload.bin", payload_data)
 
 	# Disassemble objects
 	print_normal()
-	disasm = disassemble_objects(args.objdump_exec, wdump, outfile_template, args.data_object)
+	disasm = disassemble_objects(args.objdump_exec, wdump, args.data_object, outfile_template)
 
 	# Drop to interactive debugger/shell if requested
 	if (args.debug == True or args.shell == True):
 		print_normal()
 		print_light("Dropping to interactive %s..." % ("debugger" if args.debug else "shell"))
-		print_light("Relevant data is stored in locals 'wdump' and 'disasm'.")
+		print_light("Generated data is stored in locals 'wdump' and 'disasm'.")
 		shell_locals={ "wdump": wdump, "disasm": disasm }
 		if (args.debug == True):
 			import pdb
