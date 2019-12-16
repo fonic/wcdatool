@@ -941,6 +941,210 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 
 # ------------------------------------------------------------------------------
 #                                                                              -
+#  Fixup / Relocation                                                          -
+#                                                                              -
+# ------------------------------------------------------------------------------
+
+# Get value of specified size from buffer (used for bytes here but works for all sequence types)
+def fixup_get_value(buffer, offset, size, byteorder="little", signed=False):
+
+	# Check bounds, raise exception if out of bounds
+	# NOTE: we have to do this as slicing out of bounds will not raise exceptions -> https://docs.python.org/3.6/library/stdtypes.html#sequence-types-list-tuple-range
+	if (offset > len(buffer) or (offset + size) > len(buffer)):
+		raise IndexError
+
+	# Convert bytes to value, advance offset
+	value = int.from_bytes(buffer[offset:offset+size], byteorder=byteorder, signed=signed)
+	offset += size
+
+	# Return results
+	return (value, offset)
+
+
+# Read and decode fixup / relocation data
+# NOTE: we have to do this manually (i.e. by reading and decoding binary data directly from executable)
+#       as wdump does not provide all necessary information (missing mapping of entries to pages)
+# NOTE: mainly based on format description provided by http://unavowed.vexillium.org/pub/doc/LE
+def fixup_relocation_read_decode(wdump, input_file, outfile_template):
+
+	# Sanity checks
+	if (not dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "file offset") or
+	    not dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "fixup section size") or
+	    not dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "offset of fixup page table") or
+	    not dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "offset of fixup record table")):
+		return None
+
+	# Print header
+	print_light("Reading and decoding fixup / relocation data:")
+	fixup = OrderedDict()
+
+	# Determine fixup table offsets/sizes
+	print_normal("Determining fixup table offsets/sizes...")
+	section = wdump["linear exe header (os/2 v2.x) - le"]["data"]
+	fixup["offset page table"] = section["offset of fixup page table"]
+	fixup["offset record table"] = section["offset of fixup record table"]
+	fixup["file offset page table"] = section["file offset"] + section["offset of fixup page table"]
+	fixup["file offset record table"] = section["file offset"] + section["offset of fixup record table"]
+	fixup["size page table"] = section["offset of fixup record table"] - section["offset of fixup page table"]
+	fixup["size record table"] = section["fixup section size"] - fixup["size page table"]
+	fixup["size total"] = section["fixup section size"]
+
+	# Read fixup data from input file
+	fixup["data page table"] = b""
+	fixup["data record table"] = b""
+	fixup["data total"] = b""
+	try:
+		print_normal("Opening input file to read data...")
+		with open(input_file, "rb") as infile:
+			print_normal("Seeking to offset 0x%x..." % fixup["file offset page table"])
+			infile.seek(fixup["file offset page table"])
+			print_normal("Reading fixup data...")
+			fixup["data total"] = infile.read(fixup["size total"])
+	except Exception as exception:
+		print_error("Error: %s" % str(exception))
+		return None
+	print_normal("Writing fixup data to file (%d bytes)..." % len(fixup["data total"]))
+	write_file(outfile_template, "fixup_data.bin", fixup["data total"])
+	if (len(fixup["data total"]) < fixup["size total"]):
+		print_error("[should-never-occur] Read too little data (expected %d bytes, got %d bytes)" % (fixup["size total"], len(fixup["data total"])))
+		return None
+	fixup["data page table"] = fixup["data total"][:fixup["size page table"]]
+	fixup["data record table"] = fixup["data total"][fixup["size page table"]:]
+	if (len(fixup["data page table"]) != fixup["size page table"] or
+	    len(fixup["data record table"]) != fixup["size record table"] or
+	    len(fixup["data page table"]) + len(fixup["data record table"]) < fixup["size total"]):
+		print_error("[should-never-occur] Data lengths don't add up (page table: expected %d bytes, got %d bytes; record table: expected %d bytes, got %d bytes; total: expected %d bytes, got %d bytes)" % (fixup["size page table"], len(fixup["data page table"]), fixup["size record table"], len(fixup["data record table"]), fixup["size total"], len(fixup["data page table"]) + len(fixup["data record table"])))
+		return None
+
+	# Decode fixup page table data, construct fixup page table
+	# NOTE: fixup page table is simply array of 32 bit values which specify offsets of data in record table, e.g.
+	#       0: 0x0, 1: 0x554, 2: 0x969, ... -> entries for page 0 are stored in bytes 0x0..0x553 of record table data, entries for page 1 in bytes 0x554..0x968, ...
+	print_normal("Decoding fixup page table...")
+	fixup["page table"] = []
+	values = []
+	offset = 0
+	while (offset < len(fixup["data page table"])):
+		try:
+			(value, offset) = fixup_get_value(fixup["data page table"], offset, 4)
+			values.append(value)
+		except IndexError:
+			print_warn("Failed to read further data (expected 4 bytes, got %d bytes), breaking loop" % (len(fixup["data page table"][offset:])))
+			break
+
+	if (len(values) > 0):
+		values.append(fixup["size record table"]) # it would seem this is not necessary, as there seems to be one more entry than pages
+
+	for i in range(0, len(values)-1):
+		if (values[i+1]-1 > values[i]):
+			fixup["page table"].append(OrderedDict([("start", values[i]), ("end", values[i+1]-1), ("size", values[i+1]-values[i])]))
+		else:
+			fixup["page table"].append(OrderedDict([("start", values[i]), ("end", values[i]), ("size", 0)]))
+
+	# Decode fixup record table data, construct fixup record table
+	# NOTE: record table entries have variable sizes depending on certain bits in first two bytes of each entry
+	print_normal("Decoding fixup record table...")
+	fixup["record table"] = []
+	for i in range(0, len(fixup["page table"])):
+		pte = fixup["page table"][i]
+		pte["data"] = b""
+		pte["records"] = []
+		if (pte["size"] <= 0):
+			continue
+
+		# Fetch and decode data
+		pte["data"] = fixup["data record table"][pte["start"]:pte["end"]+1]
+		if (len(pte["data"]) < pte["size"]):
+			print_warn("Not enough record data available for page %d (expected %d bytes, got %d bytes), skipping decode" % (i, pte["size"], len(pte["data"])))
+			continue
+		offset = 0
+		while (offset < len(pte["data"])):
+			try:
+				# New record table entry
+				rte = OrderedDict([("page", i), ("start", offset), ("end", offset), ("size", 0)])
+
+				# Read info bytes
+				(rte["info 1"], offset) = fixup_get_value(pte["data"], offset, 1)
+				(rte["info 2"], offset) = fixup_get_value(pte["data"], offset, 1)
+
+				# Decode info bytes
+				rte["relocation address type"] = rte["info 1"] & 0x0f
+				rte["16:16 alias fixup"] = (rte["info 1"] >> 4) & 0x01
+				rte["source offset list"] = (rte["info 1"] >> 5) & 0x01
+				rte["info 1 bit 6"] = (rte["info 1"] >> 6) & 0x01
+				rte["info 1 bit 7"] = (rte["info 1"] >> 7) & 0x01
+				rte["relocation type"] = rte["info 2"] & 0x03
+				rte["additive fixup"] = (rte["info 2"] >> 2) & 0x01
+				rte["info 2 bit 3"] = (rte["info 2"] >> 3) & 0x01
+				rte["target offset type"] = (rte["info 2"] >> 4) & 0x01
+				rte["additive flags type"] = (rte["info 2"] >> 5) & 0x01
+				rte["object/module ordinal type"] = (rte["info 2"] >> 6) & 0x01
+				rte["import ordinal type"] = (rte["info 2"] >> 7) & 0x01
+
+				# List of source offsets or single entry?
+				if (rte["source offset list"] == 0):
+					(rte["relative source offset"], offset) = fixup_get_value(pte["data"], offset, 2)
+
+					# Internal reference
+					if (rte["relocation type"] == 0x00):
+						(rte["target segment number"], offset) = fixup_get_value(pte["data"], offset, 1)
+						(rte["abs add value"], offset) = fixup_get_value(pte["data"], offset, 4) if (rte["target offset type"] == 1) else fixup_get_value(pte["data"], offset, 2)
+
+					# Imported ordinal
+					elif (rte["relocation type"] == 0x01):
+						print_warn("First time relocation type %d (0x%x) is encountered -> remove this and test/debug" % (relocation_type, relocation_type)); break
+						(rte["imported module name index"], offset) = fixup_get_value(pte["data"], offset, 1)
+						(rte["ordinal value"], offset) = fixup_get_value(pte["data"], offset, 1) if (rte["import_ordinal_type"] == 1) else fixup_get_value(pte["data"], offset, 4) if (rte["target offset type"] == 1) else fixup_get_value(pte["data"], offset, 2)
+						if (rte["additive fixup"] == 1):
+							(rte["abs add value"], offset) = fixup_get_value(pte["data"], offset, 4) if (rte["target offset type"] == 1) else fixup_get_value(pte["data"], offset, 2)
+						if (rte["target offset type"] == 1):
+							(rte["extra_value"], offset) = fixup_get_value(pte["data"], offset, 2)
+
+					# Imported name
+					elif (rte["relocation type"] == 0x10):
+						print_warn("First time relocation type %d (0x%x) is encountered -> remove this and test/debug" % (relocation_type, relocation_type)); break
+						(rte["imported module name index"], offset) = fixup_get_value(pte["data"], offset, 1)
+						(rte["offset name imported proc table"], offset) = fixup_get_value(pte["data"], offset, 2)
+						if (rte["additive fixup"] == 1):
+							(rte["abs add value"], offset) = fixup_get_value(pte["data"], offset, 4) if (rte["target offset type"] == 1) else fixup_get_value(pte["data"], offset, 2)
+						if (rte["target offset type"] == 1):
+							(rte["extra_value"], offset) = fixup_get_value(pte["data"], offset, 2)
+
+					# OSFIXUP ???
+					elif (rte["relocation type"] == 0x11):
+						print_warn("First time relocation type %d (0x%x) is encountered -> not yet implemented" % (relocation_type, relocation_type)); break
+						break
+
+					else:
+						print_error("[should-never-occur] invalid relocation type: %d (0x%x)" % (relocation_type, relocation_type))
+						break
+
+				else:
+					print_warn("First time list is encountered -> not yet implemented"); break
+					break
+
+				# Calculate end/size
+				rte["end"] = offset-1 if (offset-1 > rte["start"]) else rte["start"]
+				rte["size"] = rte["end"] - rte["start"] + 1 if (rte["end"] > rte["start"]) else 0
+
+				# Store record table entry
+				fixup["record table"].append(rte)
+				pte["records"].append(rte)
+
+			except IndexError:
+				print_warn("Failed to read further data, breaking loop")
+				break
+
+	# Write results to file
+	print_normal("Writing decoded data to file...")
+	write_file(outfile_template, "fixup_data_decoded.txt", generate_pprint(fixup))
+
+	# Return results
+	return fixup
+
+
+
+# ------------------------------------------------------------------------------
+#                                                                              -
 #  Disassembler                                                                -
 #                                                                              -
 # ------------------------------------------------------------------------------
@@ -2370,6 +2574,10 @@ def main():
 		print_normal("Writing linear executable payload data to file (%d bytes)..." % len(payload_data))
 		write_file(outfile_template, "linear_executable_payload.bin", payload_data)
 
+	# Read and decode fixup / relocation data
+	print_normal()
+	fixup = fixup_relocation_read_decode(wdump, args.input_file, outfile_template)
+
 	# Disassemble objects
 	print_normal()
 	disasm = disassemble_objects(args.objdump_exec, wdump, args.data_object, outfile_template)
@@ -2378,8 +2586,8 @@ def main():
 	if (args.debug == True or args.shell == True):
 		print_normal()
 		print_light("Dropping to interactive %s..." % ("debugger" if args.debug else "shell"))
-		print_light("Generated data is stored in locals 'wdump' and 'disasm'.")
-		shell_locals={ "wdump": wdump, "disasm": disasm }
+		print_light("Generated data is stored in locals 'wdump', 'fixup' and 'disasm'.")
+		shell_locals={ "wdump": wdump, "fixup": fixup, "disasm": disasm }
 		if (args.debug == True):
 			import pdb
 			pdb.run("", globals=globals(), locals=shell_locals)
