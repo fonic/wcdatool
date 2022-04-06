@@ -1,0 +1,108 @@
+
+                                 Object Hints
+==============================================================================
+
+# ----------------------------------------------------------------------------
+#                                                                            -
+#  Created by Fonic <https://github.com/fonic>                               -
+#  Date: 06/20/19 - 04/06/22                                                 -
+#                                                                            -
+# ----------------------------------------------------------------------------
+
+Object 1:
+# Auto-generated using 'mk2_generate_hints.sh'
+# All of these functions are 'call'ed (which implicitely pushes the return
+# address, i.e. offset after 'call' instruction, onto the stack). The functions
+# then pop the return address and use it to access the data located right after
+# the 'call' instructions)
+1) offset = 00002242H, length = 00000004H, type = data, mode = dwords, comment = Referenced by IF_NOT_BOSS_BRANCH
+2) offset = 00010118H, length = 00000004H, type = data, mode = dwords, comment = Referenced by IF_BOSS_BRANCH
+3) offset = 000104BAH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+4) offset = 00010C0BH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+5) offset = 00010C27H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+6) offset = 00010D0CH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+7) offset = 00010D8CH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+8) offset = 00010DA8H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+9) offset = 00010E27H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+10) offset = 00010EDFH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+11) offset = 00010F13H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+12) offset = 00010FE2H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+13) offset = 00011083H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+14) offset = 000110D3H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+15) offset = 000111DCH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+16) offset = 000111F8H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+17) offset = 00011214H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+18) offset = 00011230H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+19) offset = 0001124CH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+20) offset = 000112CCH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+21) offset = 000114EAH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+22) offset = 000115C4H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+23) offset = 00011681H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+24) offset = 000116D2H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+25) offset = 00011730H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+26) offset = 000117B2H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+27) offset = 00011825H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+28) offset = 00011841H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+29) offset = 00011891H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+30) offset = 000118CDH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+31) offset = 00011901H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+32) offset = 000119DDH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+33) offset = 000119F9H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+34) offset = 00011A15H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+35) offset = 00011A7CH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+36) offset = 00011AC2H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+37) offset = 00011C12H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+38) offset = 00011CD2H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+39) offset = 00011D3EH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+40) offset = 00011D73H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+41) offset = 00011FABH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+42) offset = 00011FC7H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+43) offset = 000120D8H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+44) offset = 000120F4H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+45) offset = 0001A398H, length = 00000004H, type = data, mode = dwords, comment = Referenced by IF_NOT_BOSS_BRANCH
+46) offset = 0001BD3CH, length = 00000004H, type = data, mode = dwords, comment = Referenced by IF_BOSS_BRANCH
+47) offset = 0001BDEAH, length = 00000004H, type = data, mode = dwords, comment = Referenced by IF_BOSS_BRANCH
+48) offset = 0001CBF1H, length = 00000004H, type = data, mode = dwords, comment = Referenced by IF_NOT_BOSS_BRANCH
+49) offset = 0003A045H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+50) offset = 0003A152H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+51) offset = 0003A1AFH, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+52) offset = 0003A228H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+53) offset = 0003A988H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+54) offset = 0003A9A4H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+55) offset = 0003AA78H, length = 00000008H, type = data, mode = dwords, comment = Referenced by REACT_JUMP_TABLE
+# Manually added
+100) offset = 0000F92CH, length = 00000008H, type = data, mode = dwords, comment = Referenced by DRONE_BACKFLIP_branch_18 (offset 0x122f6)
+#...
+200) start = 00010A0BH, end = 00010A4FH, type = data, mode = dwords, comment = Jump table (see offset 0x10986)
+201) start = 0001780FH, end = 00017F11H, type = data, mode = bytes, comment = Lookup table for combos (?)
+202) start = 0001F744H, end = 0001FC08H, type = data, mode = dwords, comment = Whole module 'stance.mk2' likely data (?)
+203) start = 00024E14H, end = 0002DC5CH, type = data, mode = bytes, comment = Whole module 'allpals.mk2' likely data (?)
+204) offset = 0003A919H, length = 0000000CH, type = data, mode = dwords, comment = DWORDS, unsure where used (?)
+205) offset = 0003F456H, length = 00000025H, type = data, mode = string, comment = Alphabet (ASCII characters 0-9 + a-z)
+206) offset = 0003F4F2H, length = 00000025H, type = data, mode = string, comment = Alphabet (ASCII characters 0-9 + a-z)
+207) offset = 0003FE03H, length = 00000030H, type = data, mode = dwords, comment = Jump table for signals/interrupts (see offset 0x3fe55)
+#...
+301) offset = 0003CD6EH, length = 0000006BH, type = data, mode = string, comment = Watcom copyright notice
+302) offset = 0003CDD9H, length = 00000003H, type = code, mode = default, comment = Unreachable 'lea' instruction (?)
+303) offset = 0003CDDCH, length = 00000004H, type = data, mode = dwords, comment = Stray reference to '@obj1:___begtext' (?)
+304) offset = 0003CDE0H, length = 00000004H, type = data, mode = string, comment = String (see offset 0x3cfff)
+
+Object 2:
+1) offset = 00000004H, length = 00000240H, type = data, mode = strings, comment = Strings
+2) offset = 00000244H, length = 00000940H, type = data, mode = strings, comment = Strings
+3) offset = 00000DBCH, length = 00000009H, type = data, mode = string, comment = String
+4) offset = 00013AC8H, length = 00000023H, type = data, mode = bytes, comment = Sub-addressed string
+5) start = 0002d8afH, end = 0002d9e7H, type = data, mode = strings, comment = List of strings for keyboard keys
+6) start = 0002f165H, end = 0002f1fbH, type = data, mode = bytes, comment = Default highscore table; structure: 3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score (?)
+7) start = 00033162H, end = 00034164H, type = data, mode = strings, comment = Noise table (string[8] + two dwords) (?)
+8) start = 0003417cH, end = 0003419eH, type = data, mode = string, comment = String
+9) start = 0003419eH, end = 000341b6H, type = data, mode = string, comment = String
+10) start = 000341b6H, end = 000341c6H, type = data, mode = string, comment = String
+11) start = 000341c6H, end = 000341d1H, type = data, mode = string, comment = String
+
+# TESTING: Code in data object -> may be removed once this had been automated
+200) start = 0001d97dH, end = 0001d991H, type = code, mode = default, comment = Code (?)
+201) start = 0001d991H, end = 0001d9a5H, type = code, mode = default, comment = Code (?)
+202) start = 0001d9a5H, end = 0001d9dbH, type = code, mode = default, comment = Code (?)
+203) start = 0001d9dbH, end = 0001da54H, type = code, mode = default, comment = Code (?)
+#...

@@ -1,0 +1,364 @@
+
+                                 Object Hints
+==============================================================================
+
+# ----------------------------------------------------------------------------
+#                                                                            -
+#  Created by Fonic <https://github.com/fonic>                               -
+#  Date: 06/20/19 - 04/06/22                                                 -
+#                                                                            -
+# ----------------------------------------------------------------------------
+
+Object 1:
+1) offset = 00003931H, length = 00000008H, type = data, mode = dwords, comment = Two DWORDs (see offsets 0x3b58, 0x3c8e); 'ds:...' in disassembly is incorrect, should be 'cs:...'
+2) start = 0000C340H, end = 0000C361H, type = code, mode = comment, comment = Check if Reptile shall drop to give hint (but unclear where F_GNINJA gets set to 0xff; see offset 0xbe9a)
+3) start = 0000C361H, end = 0000C500H, type = code, mode = comment, comment = Drop Reptile to give hint
+4) start = 0000d2d6H, end = 0000d2fbH, type = code, mode = comment, comment = Check if Reptile won
+5) start = 0000D715H, end = 0000D75EH, type = code, mode = comment, comment = Reptile was defeated (see offset 0xd652)
+6) start = 0000DCD5H, end = 0000DD1EH, type = code, mode = comment, comment = Check if Reptile has been found (pit + silhouette + no block + flawless + fatality; see offset 0xdc15)
+7) start = 0000E2B5H, end = 0000E3A8H, type = code, mode = comment, comment = Reptile has been found (see offset 0xdc1a)
+8) offset = 0002CCFAH, length = 0000006BH, type = data, mode = string, comment = Watcom copyright notice
+9) offset = 0002CD65H, length = 00000003H, type = code, mode = default, comment = Unreachable 'lea' instruction (?)
+10) offset = 0002CD68H, length = 00000004H, type = data, mode = dwords, comment = Stray reference to '@obj1:___begtext' (?)
+11) offset = 0002CD6CH, length = 00000004H, type = data, mode = string, comment = String (see offset 0x2cf8b)
+12) offset = 0002CFCDH, length = 00000002H, type = data, mode = words, comment = Word (see offsets 0x2ce92, 0x2cfc4)
+13) offset = 0002F644H, length = 0000002CH, type = data, mode = dwords, comment = Jump table (see offsets 0x2f719, 0x2f8e9); last 3 entries invalid or something else
+14) offset = 0003A31FH, length = 00000025H, type = data, mode = string, comment = Alphabet (ASCII characters 0-9 + a-z)
+15) offset = 0003A3BBH, length = 00000025H, type = data, mode = string, comment = Alphabet (ASCII characters 0-9 + a-z)
+16) offset = 00030848H, length = 00000018H, type = data, mode = dwords, comment = Jump table (see offset 0x30874); last 2 entries invalid or something else
+17) offset = 00030B14H, length = 00000028H, type = data, mode = dwords, comment = Jump table (see offset 0x30b62)
+18) offset = 00034414H, length = 00000200H, type = data, mode = dwords, comment = Table of DWORDs (see offsets 0x3491f, 0x3492e, 0x34935); not sure as code does not contain 'cs:...' references
+#19) offset = 00036FBCH, length = 00000400H, type = data, mode = dwords, comment = Call table (see offset 0x38f49); addresses '_DC_...' and '_M_...' functions; entries with 0 correspond to missing functions, e.g. _DC_2 - _DC_15 do not exist
+19) start = 00036FBCH, end = 000371BCH, type = data, mode = dwords, comment = Call table (see offset 0x38f49); references '_DC_*' functions; entries set to 0 correspond to missing functions (e.g. '_DC_2' - '_DC_15' do not exist)
+20) start = 000371BCH, end = 000373BCH, type = data, mode = dwords, comment = Call table (see offset 0x38e00); references '_M_*' functions; entries set to 0 correspond to missing functions (e.g. '_M_4' + '_M_5' do not exist)
+21) offset = 0003AB64H, length = 00000030H, type = data, mode = dwords, comment = Jump table for signals/interrupts (see offset 0x3abb6)
+22) start = 0002DA88H, end = 0002DADDH, type = code, mode = default, comment = Misplaced items come from code directly referencing the '0x9999*' arguments of certain 'mov' commands (see offsets 0x2dc7a-0x2dcab); self-modifying code, '0x9999*' are placeholders to be replaced
+23) start = 0003B2D5H, end = 0003C000H, type = data, mode = bytes, comment = Trailing padding data (?)
+
+#Object 2:
+## Use the following line to identify more strings
+##0) offset = 00000000H, length = FFFFFFFFH, type = data, mode = auto-strings, comment = Strings (auto-detection)
+#1) offset = 00000004H, length = 000006F0H, type = data, mode = strings, comment = Strings
+#2) offset = 00008FD0H, length = 00000009H, type = data, mode = string, comment = String
+#3) offset = 00009A79H, length = 00000029H, type = data, mode = string, comment = String
+#4) offset = 00009AA2H, length = 00000029H, type = data, mode = string, comment = String
+#5) offset = 00009B18H, length = 00000009H, type = data, mode = string, comment = String
+#6) offset = 00009B5CH, length = 0000000AH, type = data, mode = string, comment = String
+#7) offset = 00009B93H, length = 00000010H, type = data, mode = string, comment = String
+#8) offset = 00009BA3H, length = 00000016H, type = data, mode = string, comment = String
+#9) offset = 00009BB9H, length = 0000001AH, type = data, mode = string, comment = String
+#10) offset = 00009BD3H, length = 00000012H, type = data, mode = string, comment = String
+#11) offset = 00009BE5H, length = 0000001EH, type = data, mode = string, comment = String
+#12) offset = 00009C03H, length = 00000025H, type = data, mode = string, comment = String
+#13) offset = 00009C28H, length = 0000001CH, type = data, mode = string, comment = String
+#14) offset = 00009C44H, length = 00000018H, type = data, mode = string, comment = String
+#15) offset = 00009C5CH, length = 00000014H, type = data, mode = string, comment = String
+#16) offset = 00009C70H, length = 00000018H, type = data, mode = string, comment = String
+#17) offset = 00009CE4H, length = 00000011H, type = data, mode = string, comment = String
+#18) offset = 00009D0DH, length = 00000022H, type = data, mode = string, comment = String
+#19) offset = 00009D47H, length = 0000002DH, type = data, mode = string, comment = String (missing null-terminator?!)
+#20) offset = 00009D7AH, length = 0000000AH, type = data, mode = string, comment = String
+#21) offset = 00009ED2H, length = 0000001AH, type = data, mode = string, comment = String
+#22) offset = 00009EF2H, length = 0000000CH, type = data, mode = string, comment = String
+#23) offset = 00009F04H, length = 0000000CH, type = data, mode = string, comment = String
+#24) offset = 00009F59H, length = 00000010H, type = data, mode = string, comment = String
+#25) offset = 00009F81H, length = 00000029H, type = data, mode = string, comment = String
+#26) offset = 0000A012H, length = 00000013H, type = data, mode = string, comment = String
+#27) offset = 0000A03DH, length = 0000000CH, type = data, mode = string, comment = String
+#28) offset = 0000A061H, length = 00000007H, type = data, mode = string, comment = String
+#29) offset = 0000A080H, length = 0000000AH, type = data, mode = string, comment = String
+#30) offset = 0000A0A2H, length = 0000000AH, type = data, mode = string, comment = String
+#31) offset = 0000A0C4H, length = 0000000CH, type = data, mode = string, comment = String
+#32) offset = 0000A0E8H, length = 0000000EH, type = data, mode = string, comment = String
+#33) offset = 0000A10EH, length = 0000000EH, type = data, mode = string, comment = String
+#34) offset = 0000A134H, length = 0000000EH, type = data, mode = string, comment = String
+#35) offset = 0000A15AH, length = 0000000BH, type = data, mode = string, comment = String
+#36) offset = 0000A17DH, length = 0000000BH, type = data, mode = string, comment = String
+#37) offset = 0000A1A0H, length = 00000005H, type = data, mode = string, comment = String
+#38) offset = 0000A1C2H, length = 00000009H, type = data, mode = string, comment = String
+#39) offset = 0000A1E3H, length = 00000005H, type = data, mode = string, comment = String
+#40) offset = 0000A204H, length = 00000017H, type = data, mode = string, comment = String
+#41) offset = 0000A238H, length = 00000016H, type = data, mode = string, comment = String
+#42) offset = 0000A26AH, length = 00000009H, type = data, mode = string, comment = String
+#43) offset = 0000A28BH, length = 00000005H, type = data, mode = string, comment = String
+#44) offset = 0000A408H, length = 00000029H, type = data, mode = string, comment = String
+#45) offset = 0000A44CH, length = 00000010H, type = data, mode = string, comment = String
+#46) offset = 0000A474H, length = 0000000CH, type = data, mode = string, comment = String
+#47) offset = 0000A498H, length = 0000000EH, type = data, mode = string, comment = String
+#48) offset = 0000A4BEH, length = 0000011AH, type = data, mode = string, comment = String
+#49) offset = 0000A5E7H, length = 0000000CH, type = data, mode = string, comment = String
+#50) offset = 0000A5F3H, length = 00000005H, type = data, mode = string, comment = String
+#51) offset = 0000A5F8H, length = 00000007H, type = data, mode = string, comment = String
+#52) offset = 0000A5FFH, length = 00000009H, type = data, mode = string, comment = String
+#53) offset = 0000A608H, length = 00000009H, type = data, mode = string, comment = String
+#54) offset = 0000A611H, length = 00000009H, type = data, mode = string, comment = String
+#55) offset = 0000A61AH, length = 0000000CH, type = data, mode = string, comment = String
+#56) offset = 0000A626H, length = 00000005H, type = data, mode = string, comment = String
+#57) offset = 0000A62BH, length = 0000000CH, type = data, mode = string, comment = String
+#58) offset = 0000A65BH, length = 00000099H, type = data, mode = string, comment = String
+#59) offset = 0000A6F4H, length = 0000006AH, type = data, mode = string, comment = String
+#60) offset = 0000A75EH, length = 0000008FH, type = data, mode = string, comment = String
+#61) offset = 0000A7EDH, length = 0000005BH, type = data, mode = string, comment = String
+#62) offset = 0000A848H, length = 00000092H, type = data, mode = string, comment = String
+#63) offset = 0000A8DAH, length = 0000003CH, type = data, mode = string, comment = String
+#64) offset = 0000A916H, length = 00000088H, type = data, mode = string, comment = String
+#65) offset = 0000A99EH, length = 00000045H, type = data, mode = string, comment = String
+#66) offset = 0000A9E3H, length = 0000007DH, type = data, mode = string, comment = String
+#67) offset = 0000AA60H, length = 00000045H, type = data, mode = string, comment = String
+#68) offset = 0000AAA5H, length = 00000085H, type = data, mode = string, comment = String
+#69) offset = 0000AB2AH, length = 00000035H, type = data, mode = string, comment = String
+#70) offset = 0000AB5FH, length = 00000082H, type = data, mode = string, comment = String
+#71) offset = 0000ABE1H, length = 00000060H, type = data, mode = string, comment = String
+#72) offset = 0000AC41H, length = 00000009H, type = data, mode = string, comment = String
+#73) offset = 0000ACE8H, length = 0000000DH, type = data, mode = string, comment = String
+#74) offset = 0000AD10H, length = 00000061H, type = data, mode = string, comment = String
+#75) offset = 0000AD8CH, length = 0000000EH, type = data, mode = string, comment = String
+#76) offset = 0000ADB4H, length = 00000069H, type = data, mode = string, comment = String
+#77) offset = 0000AE38H, length = 00000027H, type = data, mode = string, comment = String
+#78) offset = 0000AE90H, length = 0000002DH, type = data, mode = string, comment = String
+#79) offset = 0000AED5H, length = 0000003DH, type = data, mode = string, comment = String
+#80) offset = 0000AF12H, length = 0000000BH, type = data, mode = string, comment = String
+#81) offset = 0000AF1DH, length = 0000000EH, type = data, mode = string, comment = String
+#82) offset = 0000AF2BH, length = 0000001FH, type = data, mode = string, comment = String
+#83) offset = 0000AF4AH, length = 00000056H, type = data, mode = string, comment = String
+#84) offset = 0000B020H, length = 0000000BH, type = data, mode = string, comment = String
+#85) offset = 0000B02BH, length = 0000000AH, type = data, mode = string, comment = String
+#86) offset = 0000B035H, length = 0000000CH, type = data, mode = string, comment = String
+#87) offset = 0000B059H, length = 00000014H, type = data, mode = string, comment = String
+#88) offset = 0000B306H, length = 00000031H, type = data, mode = string, comment = String
+#89) offset = 0000B34FH, length = 00000010H, type = data, mode = string, comment = String
+#90) offset = 0000B377H, length = 0000000DH, type = data, mode = string, comment = String
+#91) offset = 0000B394H, length = 00000005H, type = data, mode = string, comment = String
+#92) offset = 0000B399H, length = 00000006H, type = data, mode = string, comment = String
+#93) offset = 0000B39FH, length = 00000006H, type = data, mode = string, comment = String
+#94) offset = 0000B3A5H, length = 00000005H, type = data, mode = string, comment = String
+#95) offset = 0000B3AAH, length = 00000008H, type = data, mode = string, comment = String
+#96) offset = 0000B4D4H, length = 00000010H, type = data, mode = string, comment = String
+#97) offset = 0000BE28H, length = 00000051H, type = data, mode = string, comment = String
+#98) offset = 0000BE94H, length = 00000041H, type = data, mode = string, comment = String
+#99) offset = 0000BEF0H, length = 0000003BH, type = data, mode = string, comment = String
+#100) offset = 0000BF54H, length = 00000060H, type = data, mode = string, comment = String
+#101) offset = 0000BFCCH, length = 0000003CH, type = data, mode = string, comment = String
+#102) offset = 0000C02CH, length = 00000058H, type = data, mode = string, comment = String
+#103) offset = 0000C09CH, length = 00000058H, type = data, mode = string, comment = String
+#104) offset = 0000C118H, length = 00000037H, type = data, mode = string, comment = String
+#105) offset = 0000C168H, length = 00000044H, type = data, mode = string, comment = String
+#106) offset = 0000C1C4H, length = 00000043H, type = data, mode = string, comment = String
+#107) offset = 0000C230H, length = 0000003DH, type = data, mode = string, comment = String
+#108) offset = 0000C288H, length = 00000047H, type = data, mode = string, comment = String
+#109) offset = 0000C2E8H, length = 00000061H, type = data, mode = string, comment = String
+#110) offset = 0000C374H, length = 0000005FH, type = data, mode = string, comment = String
+#111) offset = 0000C3ECH, length = 00000050H, type = data, mode = string, comment = String
+#112) offset = 0000C460H, length = 00000052H, type = data, mode = string, comment = String
+#113) offset = 0000C4CCH, length = 0000004CH, type = data, mode = string, comment = String
+#114) offset = 0000C53CH, length = 00000042H, type = data, mode = string, comment = String
+#115) offset = 0000C598H, length = 0000003FH, type = data, mode = string, comment = String
+#116) offset = 0000C5F0H, length = 00000045H, type = data, mode = string, comment = String
+#117) offset = 0000C660H, length = 00000060H, type = data, mode = string, comment = String
+#118) offset = 0000C6D8H, length = 00000058H, type = data, mode = string, comment = String
+#119) offset = 0000C754H, length = 00000039H, type = data, mode = string, comment = String
+#120) offset = 0000C7A8H, length = 00000037H, type = data, mode = string, comment = String
+#121) offset = 0000C7F8H, length = 00000055H, type = data, mode = string, comment = String
+#122) offset = 0000C878H, length = 00000051H, type = data, mode = string, comment = String
+#123) offset = 0000C8E4H, length = 00000046H, type = data, mode = string, comment = String
+#124) offset = 0000C950H, length = 00000051H, type = data, mode = string, comment = String
+#125) offset = 0000C9BCH, length = 00000039H, type = data, mode = string, comment = String
+#126) offset = 0000CA10H, length = 00000050H, type = data, mode = string, comment = String
+#127) offset = 0000CA88H, length = 00000050H, type = data, mode = string, comment = String
+#128) offset = 0000CAF0H, length = 00000053H, type = data, mode = string, comment = String
+#129) offset = 0000CB68H, length = 0000004BH, type = data, mode = string, comment = String
+#130) offset = 0000CBCCH, length = 00000035H, type = data, mode = string, comment = String
+#131) offset = 0000CC1CH, length = 00000032H, type = data, mode = string, comment = String
+#132) offset = 0000CD10H, length = 0000001BH, type = data, mode = string, comment = String
+#133) offset = 0000CD2DH, length = 0000001EH, type = data, mode = string, comment = String
+#134) offset = 0000CD4DH, length = 00000022H, type = data, mode = string, comment = String
+#135) offset = 0000CD71H, length = 0000001EH, type = data, mode = string, comment = String
+#136) offset = 0000CD91H, length = 00000022H, type = data, mode = string, comment = String
+#137) offset = 0000CDB5H, length = 00000031H, type = data, mode = string, comment = String
+#138) offset = 0000CDE7H, length = 0000002DH, type = data, mode = string, comment = String
+#139) offset = 0000CE15H, length = 0000001DH, type = data, mode = string, comment = String
+#140) offset = 0000CE34H, length = 00000013H, type = data, mode = string, comment = String
+#141) offset = 0000CE49H, length = 0000000DH, type = data, mode = string, comment = String
+#142) offset = 0000CE57H, length = 00000008H, type = data, mode = string, comment = String
+#143) offset = 0000CE61H, length = 0000000DH, type = data, mode = string, comment = String
+#144) offset = 0000CE6FH, length = 0000000EH, type = data, mode = string, comment = String
+#145) offset = 0000CE7FH, length = 0000000DH, type = data, mode = string, comment = String
+#146) offset = 0000CE8DH, length = 0000000BH, type = data, mode = string, comment = String
+#147) offset = 0000CE99H, length = 0000000EH, type = data, mode = string, comment = String
+#148) offset = 0000CEA9H, length = 0000000CH, type = data, mode = string, comment = String
+#149) offset = 0000CEB7H, length = 0000000EH, type = data, mode = string, comment = String
+#150) offset = 0000CEC7H, length = 0000000CH, type = data, mode = string, comment = String
+#151) offset = 0000CED5H, length = 00000008H, type = data, mode = string, comment = String
+#152) offset = 0000CEDFH, length = 0000000EH, type = data, mode = string, comment = String
+#153) offset = 0000CEEFH, length = 00000010H, type = data, mode = string, comment = String
+#154) offset = 0000CF01H, length = 0000000FH, type = data, mode = string, comment = String
+#155) offset = 0000CF11H, length = 0000000EH, type = data, mode = string, comment = String
+#156) offset = 0000CF21H, length = 0000000BH, type = data, mode = string, comment = String
+#157) offset = 0000CF2DH, length = 0000000DH, type = data, mode = string, comment = String
+#158) offset = 0000CF3BH, length = 0000000EH, type = data, mode = string, comment = String
+#159) offset = 0000CF4BH, length = 0000000FH, type = data, mode = string, comment = String
+#160) offset = 0000CF5BH, length = 0000000DH, type = data, mode = string, comment = String
+#161) offset = 0000CF69H, length = 0000000EH, type = data, mode = string, comment = String
+#162) offset = 0000CF79H, length = 0000000DH, type = data, mode = string, comment = String
+#163) offset = 0000CF87H, length = 0000000CH, type = data, mode = string, comment = String
+#164) offset = 0000CF95H, length = 0000000EH, type = data, mode = string, comment = String
+#165) offset = 0000CFA5H, length = 00000009H, type = data, mode = string, comment = String
+#166) offset = 0000CFAFH, length = 0000001BH, type = data, mode = string, comment = String
+#167) offset = 0000CFCBH, length = 0000002DH, type = data, mode = string, comment = String
+#168) offset = 0000CFF9H, length = 0000001AH, type = data, mode = string, comment = String
+#169) offset = 0000D015H, length = 0000001AH, type = data, mode = string, comment = String
+#170) offset = 0000D031H, length = 00000023H, type = data, mode = string, comment = String
+#171) offset = 0000D055H, length = 00000020H, type = data, mode = string, comment = String
+#172) offset = 0000D077H, length = 00000018H, type = data, mode = string, comment = String
+#173) offset = 0000D092H, length = 00000023H, type = data, mode = string, comment = String
+#174) offset = 0000D0B6H, length = 0000001FH, type = data, mode = string, comment = String
+#175) offset = 0000D0D6H, length = 0000001AH, type = data, mode = string, comment = String
+#176) offset = 0000D0F0H, length = 0000001AH, type = data, mode = string, comment = String
+#177) offset = 0000D10AH, length = 0000001AH, type = data, mode = string, comment = String
+#178) offset = 0000D124H, length = 0000001CH, type = data, mode = string, comment = String
+#179) offset = 0000D140H, length = 0000001CH, type = data, mode = string, comment = String
+#180) offset = 0000D15CH, length = 0000001DH, type = data, mode = string, comment = String
+#181) offset = 0000D1B0H, length = 00000026H, type = data, mode = string, comment = String
+#182) offset = 0000D1F0H, length = 00000029H, type = data, mode = string, comment = String
+#183) offset = 0000D234H, length = 0000001CH, type = data, mode = string, comment = String
+#184) offset = 0000D272H, length = 00000007H, type = data, mode = string, comment = String
+#185) offset = 0000D280H, length = 00000007H, type = data, mode = string, comment = String
+#186) offset = 0000D6C8H, length = 0000000EH, type = data, mode = string, comment = String
+#187) offset = 0000D6EEH, length = 0000005CH, type = data, mode = string, comment = String
+#188) offset = 0000D766H, length = 00000011H, type = data, mode = string, comment = String
+#189) offset = 0000D78FH, length = 0000000EH, type = data, mode = string, comment = String
+#190) offset = 0000D7B5H, length = 00000058H, type = data, mode = string, comment = String
+#191) offset = 0000D82AH, length = 00000011H, type = data, mode = string, comment = String
+#192) offset = 0000D863H, length = 00000018H, type = data, mode = string, comment = String
+#193) offset = 0000D8B4H, length = 00000008H, type = data, mode = string, comment = String
+#194) offset = 0000D8D8H, length = 00000005H, type = data, mode = string, comment = String
+#195) offset = 0000D902H, length = 00000096H, type = data, mode = bytes, comment = Highscore table; entry structure (not entirely sure): 3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score
+#196) offset = 0000DAC4H, length = 0000000BH, type = data, mode = string, comment = String
+#197) offset = 0000DAE8H, length = 0000000FH, type = data, mode = string, comment = String
+#198) offset = 0000DB10H, length = 0000000DH, type = data, mode = string, comment = String
+#199) offset = 0000DB39H, length = 0000000EH, type = data, mode = string, comment = String
+#200) offset = 0000DB47H, length = 0000000DH, type = data, mode = string, comment = String
+#201) offset = 0000DB54H, length = 0000000FH, type = data, mode = string, comment = String
+#202) offset = 0000DB63H, length = 00000008H, type = data, mode = string, comment = String
+#203) offset = 0000DB6BH, length = 0000000CH, type = data, mode = string, comment = String
+#204) offset = 0000DB77H, length = 0000000CH, type = data, mode = string, comment = String
+#205) offset = 0000DC1CH, length = 0000000CH, type = data, mode = string, comment = String
+#206) offset = 0000DC8CH, length = 00000005H, type = data, mode = string, comment = String
+#207) offset = 0000DC91H, length = 00000005H, type = data, mode = string, comment = String
+#208) offset = 0000DC96H, length = 00000007H, type = data, mode = string, comment = String
+#209) offset = 0000DC9DH, length = 00000009H, type = data, mode = string, comment = String
+#210) offset = 0000DCA6H, length = 00000009H, type = data, mode = string, comment = String
+#211) offset = 0000DCAFH, length = 00000009H, type = data, mode = string, comment = String
+#212) offset = 0000DCB8H, length = 00000006H, type = data, mode = string, comment = String
+#213) offset = 0000DCDCH, length = 0000000DH, type = data, mode = string, comment = String
+#214) offset = 0000DCE9H, length = 0000000CH, type = data, mode = string, comment = String
+#215) offset = 0000DCF5H, length = 0000000CH, type = data, mode = string, comment = String
+#216) offset = 0000DD01H, length = 0000000CH, type = data, mode = string, comment = String
+#217) offset = 0000DD20H, length = 00000005H, type = data, mode = string, comment = String
+#218) offset = 0000DD25H, length = 0000000CH, type = data, mode = string, comment = String
+#219) offset = 0000DE14H, length = 00000014H, type = data, mode = string, comment = String
+#220) offset = 0000DF3FH, length = 00000020H, type = data, mode = string, comment = String
+#221) offset = 0000DF5FH, length = 00000009H, type = data, mode = string, comment = String
+#222) offset = 0000DF68H, length = 00000012H, type = data, mode = string, comment = String
+#223) offset = 0000DF7AH, length = 00000012H, type = data, mode = string, comment = String
+#224) offset = 0000DF8CH, length = 00000010H, type = data, mode = string, comment = String
+#225) offset = 0000DF9CH, length = 00000009H, type = data, mode = string, comment = String
+#226) offset = 0000DFA5H, length = 00000008H, type = data, mode = string, comment = String
+#227) offset = 0000DFADH, length = 00000006H, type = data, mode = string, comment = String
+#228) offset = 0000DFB3H, length = 00000007H, type = data, mode = string, comment = String
+#229) offset = 0000DFBAH, length = 0000000EH, type = data, mode = string, comment = String
+#230) offset = 0000DFC8H, length = 00000012H, type = data, mode = string, comment = String
+#231) offset = 0000E026H, length = 0000000AH, type = data, mode = string, comment = String
+#232) offset = 0000E030H, length = 00000005H, type = data, mode = string, comment = String
+#233) offset = 0000E035H, length = 00000007H, type = data, mode = string, comment = String
+#234) offset = 0000E03CH, length = 00000005H, type = data, mode = string, comment = String
+#235) offset = 0000E041H, length = 0000000AH, type = data, mode = string, comment = String
+#236) offset = 0000E08FH, length = 00000007H, type = data, mode = string, comment = String
+#237) offset = 0000E096H, length = 00000005H, type = data, mode = string, comment = String
+#238) offset = 0000E113H, length = 0000000BH, type = data, mode = string, comment = String
+#239) offset = 0000E11EH, length = 0000000BH, type = data, mode = string, comment = String
+#240) offset = 0000E129H, length = 0000000CH, type = data, mode = string, comment = String
+#241) offset = 0000E135H, length = 00000007H, type = data, mode = string, comment = String
+#242) offset = 0000E13CH, length = 00000008H, type = data, mode = string, comment = String
+#243) offset = 0000E144H, length = 0000000EH, type = data, mode = string, comment = String
+#244) offset = 0000E152H, length = 0000000EH, type = data, mode = string, comment = String
+#245) offset = 0000E160H, length = 0000000CH, type = data, mode = string, comment = String
+#246) offset = 0000E16CH, length = 00000007H, type = data, mode = string, comment = String
+#247) offset = 0000E27AH, length = 0000000AH, type = data, mode = string, comment = String
+#248) offset = 0000E284H, length = 0000000AH, type = data, mode = string, comment = String
+#249) offset = 0000E28EH, length = 0000000AH, type = data, mode = string, comment = String
+#250) offset = 0000E298H, length = 0000000AH, type = data, mode = string, comment = String
+#251) offset = 0000E2A2H, length = 0000000AH, type = data, mode = string, comment = String
+#252) offset = 0000E2ACH, length = 0000000AH, type = data, mode = string, comment = String
+#253) offset = 0000E2B6H, length = 0000000AH, type = data, mode = string, comment = String
+#254) offset = 0000E2C0H, length = 0000000AH, type = data, mode = string, comment = String
+#255) offset = 0000E2CAH, length = 0000000AH, type = data, mode = string, comment = String
+#256) offset = 0000E3D4H, length = 0000000EH, type = data, mode = string, comment = String
+#257) offset = 0000E3E2H, length = 00000005H, type = data, mode = string, comment = String
+#258) offset = 0000E3E7H, length = 0000000DH, type = data, mode = string, comment = String
+#259) offset = 0000E553H, length = 00000016H, type = data, mode = string, comment = String
+#260) offset = 0000E581H, length = 00000015H, type = data, mode = string, comment = String
+#261) offset = 0000E5AEH, length = 00000017H, type = data, mode = string, comment = String
+#262) offset = 0000E5DDH, length = 00000017H, type = data, mode = string, comment = String
+#263) offset = 0000E60CH, length = 00000018H, type = data, mode = string, comment = String
+#264) offset = 0000E63CH, length = 0000001DH, type = data, mode = string, comment = String
+#265) offset = 0000E671H, length = 0000001CH, type = data, mode = string, comment = String
+#266) offset = 0000E6A5H, length = 00000018H, type = data, mode = string, comment = String
+#267) offset = 0000E6D5H, length = 0000001CH, type = data, mode = string, comment = String
+#268) offset = 0000E709H, length = 0000001BH, type = data, mode = string, comment = String
+#269) offset = 0000E7A4H, length = 00000138H, type = data, mode = strings, comment = List of strings for keyboard keys
+#270) offset = 00011594H, length = 00000014H, type = data, mode = string, comment = String
+#271) offset = 000118B4H, length = 00000400H, type = data, mode = dwords, comment = Table of DWORDs (see offsets 0x1fb7c, 0x1fbfe, 0x1fee7, ...)
+#272) offset = 0002202CH, length = 00000BC0H, type = data, mode = strings, comment = Strings
+#273) offset = 00022BECH, length = 00000EC0H, type = data, mode = strings, comment = Strings
+#274) offset = 00023AACH, length = 000000F0H, type = data, mode = strings, comment = Strings
+#275) offset = 00023B9CH, length = 0000002BH, type = data, mode = string, comment = String
+#276) offset = 00023BC8H, length = 00000026H, type = data, mode = string, comment = String
+#277) offset = 00023BF0H, length = 00000016H, type = data, mode = string, comment = String
+#278) offset = 00023C08H, length = 00000022H, type = data, mode = string, comment = String
+#279) offset = 00023C2CH, length = 00000020H, type = data, mode = string, comment = String
+#280) offset = 00023C4CH, length = 00000021H, type = data, mode = string, comment = String
+#281) offset = 00023C70H, length = 00000026H, type = data, mode = string, comment = String
+#282) offset = 00023C98H, length = 00000016H, type = data, mode = string, comment = String
+#283) offset = 00023CB0H, length = 00000017H, type = data, mode = string, comment = String
+#284) offset = 00023CC8H, length = 00000008H, type = data, mode = string, comment = String
+#285) offset = 00023CD0H, length = 0000001DH, type = data, mode = string, comment = String
+#286) offset = 00023CF0H, length = 00000017H, type = data, mode = string, comment = String
+#287) offset = 00023D08H, length = 000000A4H, type = data, mode = strings, comment = Strings
+#288) offset = 00023DACH, length = 00000005H, type = data, mode = string, comment = String
+#289) offset = 00023DB4H, length = 00000005H, type = data, mode = string, comment = String
+#290) offset = 00023DBCH, length = 00000005H, type = data, mode = string, comment = String
+#291) offset = 00023DC4H, length = 0000001EH, type = data, mode = string, comment = String
+#292) offset = 00023DE4H, length = 00000026H, type = data, mode = string, comment = String
+#293) offset = 00023E0CH, length = 00000016H, type = data, mode = string, comment = String
+#294) offset = 00023E24H, length = 00000020H, type = data, mode = string, comment = String
+#295) offset = 00023E44H, length = 00000029H, type = data, mode = string, comment = String
+#296) offset = 00023E70H, length = 00000028H, type = data, mode = string, comment = String
+#297) offset = 00023E98H, length = 00000016H, type = data, mode = string, comment = String
+#298) offset = 00023EB0H, length = 00000017H, type = data, mode = string, comment = String
+#299) offset = 00023EC8H, length = 00000008H, type = data, mode = string, comment = String
+#300) offset = 00023ED0H, length = 0000001DH, type = data, mode = string, comment = String
+#301) offset = 00023EF0H, length = 00000019H, type = data, mode = string, comment = String
+#302) offset = 00023F0CH, length = 00000018H, type = data, mode = string, comment = String
+#303) offset = 00023F24H, length = 00000005H, type = data, mode = string, comment = String
+#304) offset = 00023F2CH, length = 00000005H, type = data, mode = string, comment = String
+#305) offset = 00023F34H, length = 00000005H, type = data, mode = string, comment = String
+#306) offset = 00023F3CH, length = 00000013H, type = data, mode = string, comment = String
+#307) offset = 00023F50H, length = 00000033H, type = data, mode = string, comment = String
+#308) offset = 00023F84H, length = 00000033H, type = data, mode = string, comment = String
+#309) offset = 00023FB8H, length = 0000002CH, type = data, mode = string, comment = String
+#310) offset = 00023FE4H, length = 00000004H, type = data, mode = string, comment = String
+#311) offset = 00023FE8H, length = 00000030H, type = data, mode = string, comment = String
+#312) offset = 00024018H, length = 00000024H, type = data, mode = string, comment = String
+#313) offset = 0002403CH, length = 00000018H, type = data, mode = string, comment = String
+##314) offset = 00024B40H, length = 00000060H, type = data, mode = words, comment = Force words for A0-A14 / B0-B14
+#314) offset = 00024B40H, length = 00000060H, type = data, mode = bytes, comment = Force bytes for A0-A14 / B0-B14
+#315) offset = 00045462H, length = 00000012H, type = data, mode = string, comment = String
+
+Object 2:
+1) start = 00009b93H, end = 00009cb8H, type = data, mode = comment, comment = Strings for hints given by Reptile + reference table (see offset obj1:0xc491)
+2) offset = 00009D47H, length = 0000002DH, type = data, mode = string, comment = String (missing null-terminator)
+#3) offset = 0000D902H, length = 00000096H, type = data, mode = bytes, comment = Default highscore table; structure: 3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score (?)
+3) offset = 0000D902H, length = 00000096H, type = data, mode = struct:chars[3]:bytes[3]:dword, comment = Default highscore table (3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score) (?)
+4) offset = 0000E7A4H, length = 00000138H, type = data, mode = strings, comment = List of strings for keyboard keys
+5) start = 00024B40H, end = 00024BA0H, type = data, mode = comment, comment = Emulation of registers A0-A14 / B0-B14 of original arcade machine
