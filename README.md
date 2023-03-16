@@ -20,15 +20,15 @@ Thus, I began writing my own tool. What originally started out as *mkdecomptool*
 
 Wcdatool is *work in progress*. You can tell from looking at the source code - there's tons of TODO, TESTING, FIXME, etc. flying around. Also, it is relatively slow as performance has not been the main focus.
 
-*Nevertheless, it works quite well in its current state* - you'll get a well-readable, reasonably structured disassembly output (*objdump* format). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that Wcdatool worked nicely for thus far.  
+*Nevertheless, it works quite well in its current state* - you'll get a well-readable, reasonably structured disassembly output (*objdump* format). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far.  
 
-**Please note that the tool works best when used with executables that contain debug info.** Also note that the tool was mainly tested on *Mortal Kombat* executables, therefore results for other applications may vary greatly. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for testing, please let me know.
+**Please note that wcdatool works best when being used on executables that contain debug info.** Also note that the tool was mainly tested on *Mortal Kombat* executables, therefore results for other applications may vary greatly. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for testing, please let me know.
 
 The *next major goal* is to cleanly rewrite the disassembler module and transition from static code disassembly to branch tracing (e.g. *Mortal Kombat 2* executable contains code within its data object, which is currently neither discovered nor processed).
 
 ## How to use it
 
-There are multiple ways to use *wcdatool*, but the following instructions should get you started. These steps assume that you are using *Linux*. For *Windows* users, the easiest way is to use *Windows Subsystem for Linux (WSL)*:  
+There are multiple ways to use wcdatool, but the following instructions should get you started. These instructions assume that you are using *Linux*. For *Windows* users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:  
 
 1. Requirements:
 
