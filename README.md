@@ -28,7 +28,7 @@ The *next major goal* is to cleanly rewrite the disassembler module and transiti
 
 ## How to use it
 
-There are multiple ways to use *wcdatool*, but this should get you started:
+There are multiple ways to use *wcdatool*, but the following instructions should get you started. For Windows users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:  
 
 1. Requirements:
 
@@ -36,13 +36,15 @@ There are multiple ways to use *wcdatool*, but this should get you started:
    
    Open Watcom v2: *gcc* -or- *clang* (for 64-bit builds), *DOSEMU* -or- *DOSBox* (for *wgml* utility)<br/>
    (^ only relevant if *Open Watcom v2* is built from sources; the project also provides pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
+   
+   **NOTE:** both *wdump* and *objdump* need to be accessible via `PATH`
 
 2. Download wcdatool:
    ```
    # git clone https://github.com/fonic/wcdatool.git
    ```
 
-3. Download, build and install *Open Watcom v2* (**or** use the pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
+3. Download, build and install *Open Watcom v2* (**or** use the pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases)):
    ```
    # cd wcdatool/OpenWatcom
    # ./0_download.sh
