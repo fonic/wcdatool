@@ -20,9 +20,9 @@ Thus, I began writing my own tool. What originally started out as *mkdecomptool*
 
 Wcdatool is *work in progress*. You can tell from looking at the source code - there's tons of TODO, TESTING, FIXME, etc. flying around. Also, it is relatively slow as performance has not been the main focus.
 
-*Nevertheless, it works quite well in its current state* - you'll get a well-readable, reasonably structured disassembly output (*objdump* format).
+*Nevertheless, it works quite well in its current state* - you'll get a well-readable, reasonably structured disassembly output (*objdump* format). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that Wcdatool worked nicely for thus far.  
 
-Please note that the tool was mainly tested on *Mortal Kombat* executables, therefore results for other applications may vary greatly. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for testing, please let me know.
+**Please note that the tool works best when used with executables that contain debug info.** Also note that the tool was mainly tested on *Mortal Kombat* executables, therefore results for other applications may vary greatly. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for testing, please let me know.
 
 The *next major goal* is to cleanly rewrite the disassembler module and transition from static code disassembly to branch tracing (e.g. *Mortal Kombat 2* executable contains code within its data object, which is currently neither discovered nor processed).
 
@@ -33,16 +33,16 @@ There are multiple ways to use *wcdatool*, but this should get you started:
 1. Requirements:
 
    Wcdatool: *Python >= 3.6.0*, *wdump* (part of *Open Watcom*), *objdump* (part of [binutils](https://sourceware.org/binutils/))<br/>
+   
    Open Watcom v2: *gcc* -or- *clang* (for 64-bit builds), *DOSEMU* -or- *DOSBox* (for *wgml* utility)<br/>
-
-   **NOTE:** the following instructions assume *Open Watcom v2* is built from sources (the project also provides pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
+   (^ only relevant if *Open Watcom v2* is built from sources; the project also provides pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
 
 2. Download wcdatool:
    ```
    # git clone https://github.com/fonic/wcdatool.git
    ```
 
-3. Download, build and install *Open Watcom v2*:
+3. Download, build and install *Open Watcom v2* (**or** use the pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
    ```
    # cd wcdatool/OpenWatcom
    # ./0_download.sh
@@ -51,7 +51,7 @@ There are multiple ways to use *wcdatool*, but this should get you started:
    ```
    **NOTE:** these scripts are provided for convenience, they are not part of *Open Watcom v2* itself
 
-4. Copy application executables to `wcdatool/Executables`, e.g. for *Mortal Kombat*:
+4. Copy your application/game executables to `wcdatool/Executables`, e.g. for *Mortal Kombat*:
    ```
    # cp <source-dir>/MK1.EXE wcdatool/Executables
    # cp <source-dir>/MK2.EXE wcdatool/Executables
@@ -74,9 +74,9 @@ There are multiple ways to use *wcdatool*, but this should get you started:
    **NOTE:** for the executables listed in 4., this will take 5-10 min. and generate ~2.5 GB worth of data
 
 7. Have a look at the results in `wcdatool/Output`, specifically:
-   - files `<executable>_disasm_object_x_disassembly_plain.asm` contain plain disassembly
-   - files `<executable>_disasm_object_x_disassembly_formatted.asm` contain formatted disassembly
-   - folder `<executable>_modules` contains formatted disassembly split into separate modules <sup>(*)</sup>
+   - files `<executable>_disasm_object_x_disassembly_plain.asm` contain *plain disassembly*
+   - files `<executable>_disasm_object_x_disassembly_formatted.asm` contain *formatted disassembly* (i.e. known references are replaced with debug symbols)
+   - folder `<executable>_modules` contains the same formatted disassembly as the `<executable>_disasm_object_x_disassembly_formatted.asm` files, but split into separate modules <sup>(*)</sup>
 
    <sup>(*)</sup> *This attempts to reconstruct original source files (if corresponding debug info is available)*
 
