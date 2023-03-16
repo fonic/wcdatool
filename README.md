@@ -28,16 +28,15 @@ The *next major goal* is to cleanly rewrite the disassembler module and transiti
 
 ## How to use it
 
-There are multiple ways to use wcdatool, but the following instructions should get you started. These instructions assume that you are using *Linux*. For *Windows* users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:  
+There are multiple ways to use *wcdatool*, but the following instructions should get you started. These instructions assume that you are using *Linux*. For *Windows* users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:  
 
 1. Requirements:
 
    Wcdatool: *Python >= 3.6.0*, *wdump* (part of *Open Watcom*), *objdump* (part of [binutils](https://sourceware.org/binutils/))<br/>
+   (both *wdump* and *objdump* need to be accessible via `PATH`)
    
    Open Watcom v2: *gcc* -or- *clang* (for 64-bit builds), *DOSEMU* -or- *DOSBox* (for *wgml* utility)<br/>
-   (^ only relevant if *Open Watcom v2* is built from sources; the project also provides pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
-   
-   **NOTE:** both *wdump* and *objdump* need to be accessible via `PATH`
+   (only relevant if *Open Watcom v2* is built from sources; the project also provides pre-compiled [binaries](https://github.com/open-watcom/open-watcom-v2/releases))
 
 2. Download wcdatool:
    ```
@@ -53,7 +52,7 @@ There are multiple ways to use wcdatool, but the following instructions should g
    ```
    **NOTE:** these scripts are provided for convenience, they are not part of *Open Watcom v2* itself
 
-4. Copy your application/game executables to `wcdatool/Executables`, e.g. for *Mortal Kombat*:
+4. Copy the executables to be disassembled to `wcdatool/Executables`, e.g. for *Mortal Kombat*:
    ```
    # cp <source-dir>/MK1.EXE wcdatool/Executables
    # cp <source-dir>/MK2.EXE wcdatool/Executables
@@ -62,26 +61,36 @@ There are multiple ways to use wcdatool, but the following instructions should g
    ```
    **NOTE:** file names of executables are used to locate corresponding object hint files (see 5.)
 
-5. Create/edit object hint files in `wcdatool/Hints` *(optional)*:
+5. Create/edit object hint files in `wcdatool/Hints` *(optional; skip when just getting started)*:
 
    Object hints may be used to manually affect the disassembly process (e.g. force decoding of certain regions as code/data, specify data decoding mode, define data structs, add comments). For now, please refer to included object hint files for *Mortal Kombat* for details regarding capabilites and syntax.
 
    **NOTE:** hint files are located and used automatically when stored as `wcdatool/Hints/<executable>.txt` (e.g. `wcdatool/Executables/MK1.EXE` -> `wcdatool/Hints/MK1.EXE.txt`)
 
-6. Let *wcdatool* process all provided executables:
+6. Let *wcdatool* process all provided executables (for the executables listed in 4., this will take 5-10 min. and generate ~2.5 GB worth of data):
    ```
-   # source /opt/bin/openwatcom
    # wcdatool/Scripts/process-all-executables.sh
    ```
-   **NOTE:** for the executables listed in 4., this will take 5-10 min. and generate ~2.5 GB worth of data
+   
+   -or-<br/>
+   Let *wcdatool* process a single executable:
+   ```
+   # wcdatool/Scripts/process-single.executable.sh <name-of-executable>
+   ```
+   
+   -or-<br/>
+   Run *wcdatool* manually:
+   ```
+   # python wcdatool/Wcdatool/wcdatool.py -od wcdatool/Output wcdatool/Executables/<name-of-executable>
+   ```
 
 7. Have a look at the results in `wcdatool/Output`, specifically:
    - files `<executable>_disasm_object_x_disassembly_plain.asm` contain *plain disassembly*
-   - files `<executable>_disasm_object_x_disassembly_formatted.asm` contain *formatted disassembly* (i.e. known references are replaced with debug symbols)
-   - folder `<executable>_modules` contains the same formatted disassembly as the `<executable>_disasm_object_x_disassembly_formatted.asm` files, but split into separate modules <sup>(*)</sup>
+   - files `<executable>_disasm_object_x_disassembly_formatted.asm` contain *formatted disassembly*
+   - folder `<executable>_modules` contains the same formatted disassembly, but split into separate modules <sup>(*)</sup>
 
-   <sup>(*)</sup> *This attempts to reconstruct original source files (if corresponding debug info is available)*
+   <sup>(*)</sup> This attempts to reconstruct the application's original source files (if corresponding debug info is available)
 
 ## How to contact me
 
-If you want to get in touch with me, give feedback, ask questions or simply need someone to talk to, please open an [Issue](https://github.com/fonic/wcdatool/issues) here on GitHub. Be sure to leave an email address if you prefer personal contact.
+If you want to get in touch with me, give feedback, ask questions or simply need someone to talk to, please open an [Issue](https://github.com/fonic/wcdatool/issues) here on GitHub. Be sure to leave an email address if you prefer personal/private contact.
