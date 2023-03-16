@@ -28,7 +28,7 @@ The *next major goal* is to cleanly rewrite the disassembler module and transiti
 
 ## How to use it
 
-There are multiple ways to use *wcdatool*, but the following instructions should get you started. For Windows users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:  
+There are multiple ways to use *wcdatool*, but the following instructions should get you started. These steps assume that you are using *Linux*. For *Windows* users, the easiest way is to use *Windows Subsystem for Linux (WSL)*:  
 
 1. Requirements:
 
