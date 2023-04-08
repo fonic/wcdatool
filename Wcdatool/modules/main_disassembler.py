@@ -306,7 +306,7 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 		raise ValueError("end offset must be positive value, not %s" % end_ofs)
 	if (not isinstance(mode, str)):
 		raise TypeError("mode must be type str, not %s" % type(mode).__name__)
-	if (not mode in ("default", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords")):
+	if (not mode in ("default", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords", "tbytes")):
 		raise ValueError("invalid mode: '%s'" % mode)
 
 	# Storage for results
@@ -470,9 +470,9 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 	# TODO: not sure if this works correctly for FWORDS as those are different
 	#       (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector); we have
 	#       yet to see some FWORDs in real code to verify this
-	elif (mode in ("words", "dwords", "fwords", "qwords")):	# words, dwords, fwords, qwords
-		mode_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq" }
-		mode_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8 }
+	elif (mode in ("words", "dwords", "fwords", "qwords", "tbytes")):	# words, dwords, fwords, qwords, tbytes
+		mode_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt"}
+		mode_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
 		mode_define = mode_defines[mode]
 		mode_size = mode_sizes[mode]
 		while (offset < data_len and offset < end_ofs):
@@ -516,14 +516,14 @@ def generate_struct_disassembly(data, start_ofs, end_ofs, mode):
 		raise ValueError("mode does not contain any struct member: '%s'" % mode)
 
 	# Split mode string, process struct members, generate struct list
-	type_sizes_array = { "chars": 1, "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8 }
-	type_sizes_single = { "char": 1, "byte": 1, "word": 2, "dword": 4, "fword": 6, "qword": 8 }
+	type_sizes_array = { "chars": 1, "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
+	type_sizes_single = { "char": 1, "byte": 1, "word": 2, "dword": 4, "fword": 6, "qword": 8, "tbytes": 10 }
 	struct_list = []
 	struct_members = mode.split(":")[1:]
 	for item in struct_members:
 
 		# Array types
-		match = re.match("^(chars|bytes|words|dwords|fwords|qwords)\[([0-9]+)\]$", item)
+		match = re.match("^(chars|bytes|words|dwords|fwords|qwords|tbytes)\[([0-9]+)\]$", item)
 		if (match):
 			type_ = match.group(1)
 			count = int(match.group(2))
@@ -531,7 +531,7 @@ def generate_struct_disassembly(data, start_ofs, end_ofs, mode):
 			struct_list.append(OrderedDict([("mode", "string" if (type_ == "chars") else type_), ("length", size * count)]))
 
 		# Single types
-		elif (item in ("char", "byte", "word", "dword", "fword", "qword")):
+		elif (item in ("char", "byte", "word", "dword", "fword", "qword", "tbyte")):
 			type_ = item
 			count = 1
 			size = type_sizes_single[type_]
@@ -2279,6 +2279,8 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 						mode = "fwords"
 					elif ("QWORD" in sitem["access sizes"] or "QWORDS" in sitem["access sizes"]):
 						mode = "qwords"
+					elif ("TBYTE" in sitem["access sizes"] or "TBYTES" in sitem["access sizes"]):
+						mode = "tbytes"
 					else:
 						logging.error("Failed to interpret access size: %s" % (str(sitem["access sizes"])))
 						mode = "default"

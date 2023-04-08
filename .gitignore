@@ -1,0 +1,10 @@
+# don't commit new files from Executables and Output dirs
+Executables/
+Output/
+
+# ignore cloned repository
+OpenWatcom/open-watcom-v2/
+
+__pycache__
+
+.dccache
