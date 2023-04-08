@@ -301,9 +301,13 @@ def wdump_decode_data(section):
 		for line in section["data"]:
 			line2 = str.join(" ", line.split())
 
-			match = re.match("^([0-9]+) ([0-9]+) src off = ([0-9a-fA-F ]+) object # = ([0-9]+) target off = ([0-9a-fA-F ]+)$", line2)
+			match = re.match("^([0-9]+) ([0-9]+) src off = ([0-9a-fA-F ]+) object # = ([0-9]+) target off = ?([0-9a-fA-F ]+)?$", line2)
 			if (match):
-				decoded_data.append(OrderedDict([("source type", int(match.group(1))), ("target flags", int(match.group(2))), ("source offset", int(match.group(3), 16)), ("object", int(match.group(4))), ("target offset", int(match.group(5), 16))]))
+				# target off can be empty
+				decoded_data_offset = 0
+				if match.group(5) is not None:
+					decoded_data_offset = int(match.group(5), 16)
+				decoded_data.append(OrderedDict([("source type", int(match.group(1))), ("target flags", int(match.group(2))), ("source offset", int(match.group(3), 16)), ("object", int(match.group(4))), ("target offset", decoded_data_offset)]))
 				continue
 
 			if (line2 == "Source Target" or line2 == "type flags" or line2 == "==== ===="):
