@@ -7,7 +7,7 @@
 #  Main Part Wdump                                                        -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 03/24/22                                              -
+#  Date: 06/20/19 - 06/03/22                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -667,7 +667,7 @@ def wdump_decode_data(section):
 						logging.warning("invalid entry: invalid mode '%s' for type '%s': '%s'" % (mode, type_, line2))
 						continue
 				elif (type_ == "data"):
-					if (not mode in ("default", "comment", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords") and not mode.startswith("struct")):
+					if (not mode in ("default", "comment", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords", "tbytes") and not mode.startswith("struct")):
 						logging.warning("invalid entry: invalid mode '%s' for type '%s': '%s'" % (mode, type_, line2))
 						continue
 				else:

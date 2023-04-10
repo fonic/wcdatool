@@ -7,7 +7,7 @@
 #  Main Part Disassembler                                                 -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 04/06/22                                              -
+#  Date: 06/20/19 - 04/09/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 #                                     -
 # -------------------------------------
 
-# - See '../../documents/todo-disassembler.txt'
+# - See '../../documents/todo.txt'
 #
 # - Below are older TODOs that need to be checked/sorted out (might be out of date):
 #
@@ -82,6 +82,10 @@ from modules.module_pretty_print import *
 # -------------------------------------
 
 # Split assembly line (objdump format)
+# TODO:
+# We often need start and end offset of assembler line; thus, it makes sense
+# to start start_ofs + end_ofs instead of just offset (to replace, search for
+# 'asm["offset"] + len(asm["data"]')
 def split_asm_line(line):
 	if (not isinstance(line, str)):
 		raise TypeError("line must be type str, not %s" % type(line).__name__)
@@ -92,6 +96,18 @@ def split_asm_line(line):
 	if (match):
 		return OrderedDict([("indent", match.group(1)), ("offset", int(match.group(2), 16)), ("data", bytes.fromhex(match.group(3).strip())), ("command", match.group(4)), ("arguments", match.group(5)), ("comment", match.group(6))])
 	return None
+
+
+# Format split asm line as string
+# TODO: only a stub for now
+def format_split_asm(asm):
+	for (key, key_type) in (("offset", int), ("data", bytes), ("command", str), ("arguments", str)):
+		if (not key in asm):
+			raise ValueError("asm dict does not contain key '%s'" % key)
+		if (not isinstance(asm[key], key_type)):
+			raise TypeError("asm[\"%s\"] must be type %s, not %s" % (key, key_type.__name__, type(asm[key]).__name__))
+
+	return "%x:  %s  %s %s" % (asm["offset"], asm["data"].hex(" "), asm["command"], asm["arguments"])
 
 
 # Check if byte value (integer of range 0-255) is within ASCII range (https://www.asciitable.com/)
@@ -117,7 +133,7 @@ def generate_define_byte(offset, value, *, comment=False):
 	if (not isinstance(offset, int)):
 		raise TypeError("offset must be type int, not %s" % type(offset).__name__)
 	if (offset < 0):
-		raise ValueError("offset must be positive value, not %s" % offset)
+		raise ValueError("offset must be positive value, not %d" % offset)
 	if (not isinstance(value, int)):
 		raise TypeError("value must be type int, not %s" % type(value).__name__)
 	if (not value in range(0, 256)):
@@ -172,11 +188,11 @@ def generate_code_disassembly(data, start_ofs, end_ofs, mode, objdump_exec, line
 	if (not isinstance(start_ofs, int)):
 		raise TypeError("start offset must be type int, not %s" % type(start_ofs).__name__)
 	if (start_ofs < 0):
-		raise ValueError("start offset must be positive value, not %s" % start_ofs)
+		raise ValueError("start offset must be positive value, not %d" % start_ofs)
 	if (not isinstance(end_ofs, int)):
 		raise TypeError("end offset must be type int, not %s" % type(end_ofs).__name__)
 	if (end_ofs < 0):
-		raise ValueError("end offset must be positive value, not %s" % end_ofs)
+		raise ValueError("end offset must be positive value, not %d" % end_ofs)
 	if (not isinstance(mode, str)):
 		raise TypeError("mode must be type str, not %s" % type(mode).__name__)
 	if (not mode in ("default")):
@@ -186,7 +202,7 @@ def generate_code_disassembly(data, start_ofs, end_ofs, mode, objdump_exec, line
 	if (not isinstance(bad_num, int)):
 		raise TypeError("bad number must be type int, not %s" % type(bad_num).__name__)
 	if (bad_num < 0):
-		raise ValueError("bad number must be positive value, not %s" % bad_num)
+		raise ValueError("bad number must be positive value, not %d" % bad_num)
 
 	# Storage for results
 	offset = start_ofs
@@ -299,14 +315,14 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 	if (not isinstance(start_ofs, int)):
 		raise TypeError("start offset must be type int, not %s" % type(start_ofs).__name__)
 	if (start_ofs < 0):
-		raise ValueError("start offset must be positive value, not %s" % start_ofs)
+		raise ValueError("start offset must be positive value, not %d" % start_ofs)
 	if (not isinstance(end_ofs, int)):
 		raise TypeError("end offset must be type int, not %s" % type(end_ofs).__name__)
 	if (end_ofs < 0):
-		raise ValueError("end offset must be positive value, not %s" % end_ofs)
+		raise ValueError("end offset must be positive value, not %d" % end_ofs)
 	if (not isinstance(mode, str)):
 		raise TypeError("mode must be type str, not %s" % type(mode).__name__)
-	if (not mode in ("default", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords")):
+	if (not mode in ("default", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords", "tbytes")):
 		raise ValueError("invalid mode: '%s'" % mode)
 
 	# Storage for results
@@ -468,11 +484,15 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 			offset += 1
 
 	# TODO: not sure if this works correctly for FWORDS as those are different
-	#       (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector); we have
-	#       yet to see some FWORDs in real code to verify this
-	elif (mode in ("words", "dwords", "fwords", "qwords")):	# words, dwords, fwords, qwords
-		mode_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq" }
-		mode_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8 }
+	#       (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector); probably
+	#       not, as it might be that the first 4 bytes need to be reversed
+	#       separately from the last 2 bytes (currently all 6 bytes are reversed
+	#       in order of appearance)
+	# NOTE: words + qwords are very common; TBYTEs can be observed in FATAL.EXE;
+	#       we have yet to see FWORDs in real code
+	elif (mode in ("words", "dwords", "fwords", "qwords", "tbytes")):	# words, dwords, fwords, qwords, tbytes
+		mode_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt" }
+		mode_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
 		mode_define = mode_defines[mode]
 		mode_size = mode_sizes[mode]
 		while (offset < data_len and offset < end_ofs):
@@ -503,11 +523,11 @@ def generate_struct_disassembly(data, start_ofs, end_ofs, mode):
 	if (not isinstance(start_ofs, int)):
 		raise TypeError("start offset must be type int, not %s" % type(start_ofs).__name__)
 	if (start_ofs < 0):
-		raise ValueError("start offset must be positive value, not %s" % start_ofs)
+		raise ValueError("start offset must be positive value, not %d" % start_ofs)
 	if (not isinstance(end_ofs, int)):
 		raise TypeError("end offset must be type int, not %s" % type(end_ofs).__name__)
 	if (end_ofs < 0):
-		raise ValueError("end offset must be positive value, not %s" % end_ofs)
+		raise ValueError("end offset must be positive value, not %d" % end_ofs)
 	if (not isinstance(mode, str)):
 		raise TypeError("mode must be type str, not %s" % type(mode).__name__)
 	if (not mode.startswith("struct:")):
@@ -516,14 +536,14 @@ def generate_struct_disassembly(data, start_ofs, end_ofs, mode):
 		raise ValueError("mode does not contain any struct member: '%s'" % mode)
 
 	# Split mode string, process struct members, generate struct list
-	type_sizes_array = { "chars": 1, "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8 }
-	type_sizes_single = { "char": 1, "byte": 1, "word": 2, "dword": 4, "fword": 6, "qword": 8 }
+	type_sizes_array = { "chars": 1, "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
+	type_sizes_single = { "char": 1, "byte": 1, "word": 2, "dword": 4, "fword": 6, "qword": 8, "tbyte": 10 }
 	struct_list = []
 	struct_members = mode.split(":")[1:]
 	for item in struct_members:
 
 		# Array types
-		match = re.match("^(chars|bytes|words|dwords|fwords|qwords)\[([0-9]+)\]$", item)
+		match = re.match("^(chars|bytes|words|dwords|fwords|qwords|tbytes)\[([0-9]+)\]$", item)
 		if (match):
 			type_ = match.group(1)
 			count = int(match.group(2))
@@ -531,7 +551,7 @@ def generate_struct_disassembly(data, start_ofs, end_ofs, mode):
 			struct_list.append(OrderedDict([("mode", "string" if (type_ == "chars") else type_), ("length", size * count)]))
 
 		# Single types
-		elif (item in ("char", "byte", "word", "dword", "fword", "qword")):
+		elif (item in ("char", "byte", "word", "dword", "fword", "qword", "tbyte")):
 			type_ = item
 			count = 1
 			size = type_sizes_single[type_]
@@ -804,7 +824,8 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 
 			pre = []
 			if (item["start"] < current_offset):
-				logging.warning("Misplaced item '%s' at offset 0x%x" % (item["name"], current_offset))
+				#logging.warning("Misplaced item '%s' at offset 0x%x" % (item["name"], current_offset))
+				logging.warning("Misplaced item '%s'/'%s' at offset 0x%x" % (item["name"], item["label"], current_offset))
 				pre = ["; misplaced item, should be at offset 0x%0x" % item["start"]]
 
 			if (item["type"] == "object start"):
@@ -919,8 +940,8 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 			# TODO: merge this with adding comments for fixups (i.e. just move that stuff here)
 			if (current_offset in fixup_map):
 				for record in fixup_map[current_offset]:
-					if (not "target offset" in record): # FIXME: SWS.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
-						logging.warning("Skipping fixup record with missing 'target offset'")
+					if (not "target offset" in record): # FIXME: SWS.EXE, FATAL.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
+						logging.warning("[FIXME] Skipping fixup record with missing 'target offset'")
 						continue
 					if (not (record["target object"], record["target offset"]) in globals_map):
 						logging.warning("No global in map for fixup (target object %d, target offset 0x%x): %s" % (record["target object"], record["target offset"], line))
@@ -939,6 +960,11 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 					matches = re.findall("0x0*%x" % record["target offset"], asm["arguments"].strip())
 					if (len(matches) == 0):
 						logging.warning("Failed to match fixup target offset 0x%x: %s" % (record["target offset"], line))
+						# TODO: should we check here if argument only contains one '0x...' address and
+						#       then override using fixup target (for stub calls/jumps)? -> no, it is to
+						#       late here and could potentially lead to masking other issues causing a
+						#       mismatch; override when determining that 'fixup takes precedence' instead
+						#       (part of 'Analyzing branches')
 						continue
 					elif (len(matches) > 1):
 						logging.warning("Multiple matches for fixup target offset 0x%x: %s" % (record["target offset"], line))
@@ -956,6 +982,11 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 			# NOTE: there might be multiple globals available for a given (object, offset),
 			#       e.g. MK1.EXE, object 1, P_CONT + P_START @ 0xed84; simply use the first
 			#       one and list the others in a comment
+			# TODO: this will try to replace offsets or throw warnings for call/jump stubs
+			#       (i.e. lines where 'fixup takes precedence' occurred earlier, see 'Analyzing
+			#       branches'); not pretty, but should be fine for now as replace here simply
+			#       does nothing since offset has already been replaced with fixup target label
+			#       at this point (see 'line.replace()' in code block above)
 			if (asm["command"] == "call" or asm["command"].startswith("j")):
 				match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
 				if (match != None):
@@ -986,8 +1017,8 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 			if (current_offset in fixup_map):
 				fixup_comments = []
 				for record in fixup_map[current_offset]:
-					if (not "target offset" in record): # FIXME: SWS.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
-						logging.warning("Skipping fixup record with missing 'target offset'")
+					if (not "target offset" in record): # FIXME: SWS.EXE, FATAL.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
+						logging.warning("[FIXME] Skipping fixup record with missing 'target offset'")
 						continue
 					#fixup_comments.append("fixup: num: %d, source object: %d, source offset: 0x%x, target object: %d, target offset: 0x%x" % (record["num"], record["source object"], record["source offset 2"], record["target object"], record["target offset"]))
 					fixup_comments.append("fixup: num: %d, src obj: %d, src ofs: 0x%x, dst obj: %d, dst ofs: 0x%x" % (record["num"], record["source object"], record["source offset 2"], record["target object"], record["target offset"]))
@@ -1140,6 +1171,11 @@ def preprocess_globals(wdump):
 # Preprocess fixups:
 # - strip data down to what we actually need
 # - sort fixups by source object, source offset
+# NOTE:
+# Fixup records have two source offsets: 'source offset' and 'source offset 2':
+# - 'source offset' == relative to fixup's parent page, signed 16 bit value
+# - 'source offset 2' == relative to object, unsigned 32 bit value
+# -> only 'source offset 2' is kept and stored as 'source offset' in results
 def preprocess_fixups(fixrel):
 	logging.debug("Preprocessing fixups...")
 
@@ -1149,8 +1185,9 @@ def preprocess_fixups(fixrel):
 
 	fixups = []
 	for record in fixrel["record table"].values():
-		if not "target offset" in record: # FIXME: SWS.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
-			logging.warning("skipping fixup record with missing 'target offset'")
+		if (not "target offset" in record): # FIXME: SWS.EXE, FATAL.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
+			logging.warning("[FIXME] Skipping fixup record with missing 'target offset':")
+			logging.warning(str(record))
 			continue
 		fixups.append(OrderedDict([("num", record["num"]), ("source object", record["source object"]), ("source offset", record["source offset 2"]), ("target object", record["target object"]), ("target offset", record["target offset"])]))
 
@@ -1160,7 +1197,7 @@ def preprocess_fixups(fixrel):
 	return fixups
 
 
-# ----------------- miscellaneous --------------------
+# ----------------- fixups --------------------
 
 
 # Analyze references in fixup/relocation data and add corresponding globals
@@ -1217,11 +1254,331 @@ def analyze_fixups_add_globals(objects, globals_, fixups):
 	for fixup in fixups:
 		if ((fixup["target object"], fixup["target offset"]) in known_globals):
 			continue
+		if (not "target offset" in fixup): # FIXME: SWS.EXE, FATAL.EXE; probably fixups of different type, see 'main_fixup_relocation.py', line 276ff
+			logging.warning("[FIXME] Skipping fixup record with missing 'target offset'")
+			continue
 		globals_.append(OrderedDict([("name", None), ("module", None), ("object", fixup["target object"]), ("offset", fixup["target offset"]), ("type", obj_num_to_type[fixup["target object"]]), ("source", "fixup data")]))
 		known_globals[(fixup["target object"], fixup["target offset"])] = globals_[-1]
 		added_globals += 1
 	globals_.sort(key=lambda item: (item["object"], item["offset"]))
 	logging.debug("Added %d globals for fixup references (%d globals total)" % (added_globals, len(globals_)))
+
+
+# Format fixup record as string
+def format_fixup(record):
+	return "num: %d, src obj: %d, src ofs: 0x%x, dst obj: %d, dst ofs: 0x%x" % (record["num"], record["source object"], record["source offset"], record["target object"], record["target offset"])
+
+
+# Generate fixup maps:
+# - (source object, source offset) -> list of fixups
+# - (target object, target offset) -> list of fixups
+# NOTE:
+# - preprocess_fixups() eliminates 'source offset 2', thus 'source offset'
+#   here is already relative to object, i.e. 'absolute'
+# - it is possible to have collisions/duplicate entries in the source map due
+#   to duplicate records around page boundaries (e.g. MK1.EXE, object 1, offset
+#   0xcffd; see 'Fixups at page boundaries' in 'main_fixup_relocation.py')
+# - it is possible, even likely, to have collisions/duplicate entries in the
+#   target map as targets are often referred to at multiple locations within
+#   the code
+def generate_fixup_maps(fixups):
+	logging.debug("Generating fixup maps...")
+	source_map = {}
+	target_map = {}
+
+	for fixup in fixups:
+		if (not (fixup["source object"], fixup["source offset"]) in source_map):
+			source_map[(fixup["source object"], fixup["source offset"])] = []
+		source_map[(fixup["source object"], fixup["source offset"])].append(fixup)
+
+		if (not (fixup["target object"], fixup["target offset"]) in target_map):
+			target_map[(fixup["target object"], fixup["target offset"])] = []
+		target_map[(fixup["target object"], fixup["target offset"])].append(fixup)
+
+	logging.debug("Source map: %d entries, target map: %d entries" % (len(source_map), len(target_map)))
+	return (source_map, target_map)
+
+
+# Get fixups for offset range from fixup map
+# NOTE:
+# - works for both source and target map
+# - end offset is excluded
+# - use 'filter_dupes=True' to filter out duplicates (i.e. entries with same
+#   src obj + src ofs + tgt obj + tgt ofs; this helps dealing with duplicate
+#   fixup records around page boundaries)
+def get_fixups_for_offset(fixup_map, obj_num, start_ofs, end_ofs, filter_dupes):
+	if (not isinstance(fixup_map, dict)):
+		raise TypeError("fixup_map must be type dict, not %s" % type(fixup_map).__name__)
+	if (not isinstance(obj_num, int)):
+		raise TypeError("obj_num must be type int, not %s" % type(obj_num).__name__)
+	if (obj_num < 0):
+		raise ValueError("obj_num must be positive value, not %d" % obj_num)
+	if (not isinstance(start_ofs, int)):
+		raise TypeError("start_ofs must be type int, not %s" % type(start_ofs).__name__)
+	if (start_ofs < 0):
+		raise ValueError("start_ofs must be positive value, not %d" % start_ofs)
+	if (not isinstance(end_ofs, int)):
+		raise TypeError("end_ofs must be type int, not %s" % type(end_ofs).__name__)
+	if (end_ofs < 0):
+		raise ValueError("end_ofs must be positive value, not %d" % end_ofs)
+	if (not isinstance(filter_dupes, bool)):
+		raise TypeError("filter_dupes must be type bool, not %s" % type(filter_dupes).__name__)
+
+	fixups = []
+
+	if (filter_dupes == True):
+		dupes_map = {}
+		for ofs in range(start_ofs, end_ofs):
+			if ((obj_num, ofs) in fixup_map):
+				for item in fixup_map[(obj_num, ofs)]:
+					if ((item["source object"], item["source offset"], item["target object"], item["target offset"]) in dupes_map):
+						#logging.debug("Filtering duplicate fixup: %s" % format_fixup(item))
+						continue
+					fixups.append(item)
+					dupes_map[(item["source object"], item["source offset"], item["target object"], item["target offset"])] = item
+
+	else:
+		for ofs in range(start_ofs, end_ofs):
+			if ((obj_num, ofs) in fixup_map):
+				fixups += fixup_map[(obj_num, ofs)]
+
+	return fixups
+
+
+# ----------------- miscellaneous --------------------
+
+
+# Trace execution flow to identify code/data blocks
+def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdump_exec):
+
+	#
+	# TODO:
+	#
+	# - when done, generate and print list of 'holes' in object data space (i.e. unidentified/unvisited
+	#   portions of an object's data)
+	#
+	# - detect/decode branch via jump table:
+	#   2f8e9:       2e ff 24 85 54 f6 02 00         jmp    DWORD PTR cs:[eax*4+0x2f654]
+	#   -> we can be fairly certain that there is a jump table at 0x2f654
+	#   -> we know that jump tables contain branch locations (branch target object/offset can be obtained
+	#      from fixup data)
+	#   -> problem: we don't know the length of the jump table (i.e. number of entries)
+	#   -> as a heuristic, we could process entries as long as we have consecutive fixups and don't hit a
+	#      global or module end (e.g. would work for MK1.EXE, _AIL_WAV_EOS_reference_1, signal__reference_1,
+	#      _SS_serve_reference_1 and even for dma_asm_variable_1 in object 2; but problematic for tables
+	#      with 'holes', e.g. ailssa_asm_reference_1)
+	#   -> a jump table is a DATA block, thus store it as such in the block list
+	#
+	#
+	# DONE:
+	# - detect/decode branch via reference:
+	#   2cade:       ff 15 b4 46 04 00       call   DWORD PTR ds:0x446b4
+	#   -> if there is a fixup for value 0x446b4, we know that 0x446b4 is a reference
+	#   -> if there is also a fixup for the value stored at 0x446b4, we known the branch target object/offset
+	#      (from fixup data)
+	#   -> this boils down to dereferencing two pointer using fixup data
+	#   -> the location of the reference (here: 0x446b4) is a DATA block, thus store it as such in the
+	#    block list
+	# - use fixup data to set bt_obj correctly (currently hard-coded, which won't work for MK2's code
+	#   in data objects; requires offset-fixup-map)
+	# - create an object map so we don't need to use next(); also helpful to store per-object results
+	#   when done
+	# - store unrecognized call/jump in a separate list for better analysis / debugging instead of
+	#   only printing mid-analysis
+	# - change from code blocks to just blocks; add key 'type' to each block; this way, we are able
+	#   to store any kind of block (see jump tables below)
+	#
+
+	# Initialize block list + known blocks map
+	blk_list = []
+	blk_map = {}
+
+	# Initialize direct branches list, reference branches, unrecognized branches
+	# list (for debugging only)
+	db_list = []
+	rb_list = []
+	ub_list = []
+
+	# Add specified start point as initial item to block list + known blocks map
+	# NOTE:
+	# Start point MUST point to code for execution tracing to work
+	blk_list.append(OrderedDict([("object", start_obj), ("start", start_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
+	blk_map[(start_obj, start_ofs)] = blk_list[-1]
+
+	# Generate map object num -> object
+	obj_map = {}
+	for object in objects:
+		if (object["num"] in obj_map):
+			logging.error("Object map already contains entry for object %d" % object["num"])
+			continue
+		obj_map[object["num"]] = object
+
+	# Process block list
+	# NOTE: list will grow during loop, which seems to work fine with for-loops
+	for block in blk_list:
+
+		# Print current item
+		logging.debug("Block start: object: %d, start: 0x%x, type: %s" % (block["object"], block["start"], block["type"]))
+
+		# Retrieve corresponding object from object list (https://stackoverflow.com/a/8653568/1976617)
+		#object = next((item for item in objects if (item["num"] == block["object"])), None)
+		#if (object == None):
+		#	logging.error("Object list does not contain object %d, skipping block (object: %d, start: 0x%x, type: %s)" % (block["object"], block["object"], block["start"], block["type"]))
+		#	continue
+		# Retrieve corresponding object from object map
+		if (not block["object"] in obj_map):
+			logging.error("Object map does not contain entry for object %d, skipping block (object: %d, start: 0x%x, type: %s)" % (block["object"], block["object"], block["start"], block["type"]))
+			continue
+		object = obj_map[block["object"]]
+
+		# Make sure block start is within bounds of object data
+		if (block["start"] < 0 or block["start"] >= object["size"]):
+			logging.error("Block start out of bounds: block start: 0x%x, object size: 0x%x, skipping block (object: %d, start: 0x%x, type: %s)" % (block["start"], object["size"], block["object"], block["start"], block["type"]))
+			continue
+
+		# Search block list for block starting right AFTER current block
+		# -> use start of next block as expected end of current block
+		# -> this is just a smart guess to speed things up; the block might end
+		#    prematurely (e.g. due to 'ret')
+		end_ofs = object["size"]
+		for item in blk_list:
+			if (item["object"] != block["object"]):
+				continue
+			if (item["start"] > block["start"] and item["start"] < end_ofs):
+				end_ofs = item["start"]
+
+		# Disassemble code block
+		logging.debug("  Disassembling: object: %d, start: 0x%x, end: 0x%x, type: %s" % (block["object"], block["start"], end_ofs, block["type"]))
+		(_, _, disassembly, _) = generate_code_disassembly(object["data"], block["start"], end_ofs, "default", objdump_exec, 0, 0, verbose=False)
+
+		# Process disassembly lines
+		break_loop = False
+		for line in disassembly:
+
+			# Break loop requested?
+			if (break_loop == True):
+				break
+
+			# Split line, add split line to block disassembly
+			asm = split_asm_line(line)
+			block["disassembly"].append(asm)
+
+			# End of code block reached? -> request break loop
+			# NOTE:
+			# - code blocks do not necessarily have to end with one of these commands,
+			#   it is also possible that the loop ends when all disassembly lines have
+			#   been processed (e.g. MK1.EXE, object 1, 0x2cdf2 - 0x2ce2a)
+			# - request loop break logic used to be able to use 'continue' below +
+			#   'jmp' still has to be processed
+			if (asm["command"] in ("ret", "iret", "iretd", "jmp")):
+				break_loop = True
+
+			# Does code branch?
+			# -> check if branch is direct/constant
+			# -> check if fixup applies / takes precedence
+			# -> check if branch target is new/unknown block
+			# -> add new item to block list + known blocks map
+			if (asm["command"] == "call" or asm["command"].startswith("j")):		# call + jump commands
+
+				# Direct branch (i.e. branch via direct/constant address/offset)
+				match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
+				if (match != None):
+					bt_obj = block["object"]										# assume branch within same object (fixup may override)
+					bt_ofs = int(match.group(1), 16)								# assume offset is correct (fixup may override)
+					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
+					if (len(fixups) > 1):											# multiple fixups for branch (should never happen)
+						logging.error("  Multiple fixups for direct branch: %s" % line)
+						for fixup in fixups:
+							logging.error("  %s" % format_fixup(fixup))
+						continue
+					if (len(fixups) == 1):											# exactly one fixup -> fixup takes precedence as it is
+						fixup = fixups[0]											# much more credible/reliable (i.e. overrides target)
+						if (fixup["target object"] != bt_obj or fixup["target offset"] != bt_ofs):
+							logging.warning("  Fixup takes precedence for direct branch:")
+							logging.warning("  %s" % line)
+							logging.warning("  %s" % format_fixup(fixup))
+						bt_obj = fixup["target object"]
+						bt_ofs = fixup["target offset"]
+					db_list.append(OrderedDict([ ("object", block["object"]), ("line", line)]))
+					if (not (bt_obj, bt_ofs) in blk_map):
+						logging.debug("  New block (direct): object: %d, start: 0x%x, line: %s" % (bt_obj, bt_ofs, line))
+						blk_list.append(OrderedDict([("object", bt_obj), ("start", bt_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
+						blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
+					continue														# branch was handled
+
+				# Reference branch (i.e. indirect branch via memory reference(
+				match = re.match("^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?0x[0-9a-fA-F]+$", asm["arguments"].strip())
+				if (match):
+					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
+					if (len(fixups) == 0):
+						logging.error("  No fixup for reference branch: %s" % line)
+						continue
+					if (len(fixups) > 1):
+						logging.error("  Multiple fixups for reference branch: %s" % line)
+						for fixup in fixups:
+							logging.error("  %s" % format_fixup(fixup))
+						continue
+					fixup = fixups[0]
+					ref_obj = fixup["target object"]
+					ref_ofs = fixup["target offset"]
+
+					fixups = get_fixups_for_offset(fusrc_map, ref_obj, ref_ofs, ref_ofs + 4, True)
+					if (len(fixups) == 0):											# happens for stubs, e.g. FATAL.EXE, (obj 1, 0x71cb2) -> (obj 3, ofs: 0x103ab8) -> no fixup
+						logging.error("  No fixup for reference branch (2): %s" % line)
+						continue
+					if (len(fixups) > 1):
+						logging.error("  Multiple fixups for reference branch (2): %s" % line)
+						for fixup in fixups:
+							logging.error("  %s" % format_fixup(fixup))
+						continue
+					fixup = fixups[0]
+					bt_obj = fixup["target object"]
+					bt_ofs = fixup["target offset"]
+
+					rb_list.append(OrderedDict([ ("object", block["object"]), ("line", line), ("refs", "(%d, 0x%x) -> (%d, 0x%x) -> (%d, 0x%x)" % (block["object"], asm["offset"], ref_obj, ref_ofs, bt_obj, bt_ofs))]))
+
+					if (not (bt_obj, bt_ofs) in blk_map):
+						logging.debug("  New block (reference): object: %d, start: 0x%x, line: %s" % (bt_obj, bt_ofs, line))
+						blk_list.append(OrderedDict([("object", bt_obj), ("start", bt_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
+						blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
+					continue
+
+				# TODO: implement handling of branch via jump table
+
+				# Unrecognized branch
+				logging.warning("  Unrecognized branch: %s" % line)
+				ub_list.append(OrderedDict([("object", block["object"]), ("line", line)]))
+
+		# Calculate end + length of code block from last disassembly line
+		asm = block["disassembly"][-1]
+		block["end"] = asm["offset"] + len(asm["data"])
+		block["length"] = block["end"] - block["start"]
+
+		# Print current item
+		logging.debug("Block end: object: %d, start: 0x%x, end: 0x%x, length: 0x%x (%d), type: %s, lines: %d" % (block["object"], block["start"], block["end"], block["length"], block["length"], block["type"], len(block["disassembly"])))
+
+	# Sort results
+	blk_list.sort(key=lambda item: (item["object"], item["start"]))
+
+	# Print results
+	logging.debug("")
+	logging.warning("Direct branches (%d):" % len(db_list))
+	for item in db_list:
+		logging.debug("object: %d, line: %s" % (item["object"], item["line"]))
+	logging.debug("")
+	logging.warning("Reference branches (%d):" % len(rb_list))
+	for item in rb_list:
+		logging.debug("object: %d, line: %s" % (item["object"], item["line"]))
+		logging.debug(item["refs"])
+	logging.debug("")
+	logging.warning("Unrecognized branches (%d):" % len(ub_list))
+	for item in ub_list:
+		logging.debug("object: %d, line: %s" % (item["object"], item["line"]))
+	logging.debug("")
+	logging.debug("Identified %d unique blocks" % len(blk_list))
+
+	# Return results
+	return (blk_list, blk_map)
 
 
 # ------------------- data maps ----------------------
@@ -1369,7 +1726,7 @@ def insert_data_map_item(data_map, ins_item):
 		if (not key in ins_item):
 			raise ValueError("insert item dict does not contain key '%s'" % key)
 		if (not isinstance(ins_item[key], key_type)):
-			raise TypeError("ins_item[\"%s\"] must be type %s or None, not %s" % (key, key_type.__name__, type(ins_item[key]).__name__))
+			raise TypeError("ins_item[\"%s\"] must be type %s, not %s" % (key, key_type.__name__, type(ins_item[key]).__name__))
 	if (ins_item["end"] < ins_item["start"]):
 		raise ValueError("insert item has invalid range (end < start): start: 0x%s, end: 0x%s" % (ins_item["start"], ins_item["end"]))
 
@@ -1476,11 +1833,35 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 	disasm["fixups"] = preprocess_fixups(fixrel)
 
 
+	# TODO:
+	# - not sure if it makes sense to group it like this
+	# - for now, storing maps as local variables; maybe add to disasm[] later?
+	logging.info("")
+	logging.info("Processing fixups further:")
+	# Generate fixups maps
+	(fusrc_map, futgt_map) = generate_fixup_maps(disasm["fixups"])
 	# Analyze references in fixup/relocation data and add corresponding globals
-	# TODO: not really sure if this is a good position
-	# TODO: does currently not belong to any group of actions; could make this part of preprocessing
-	logging.debug("")
+	# TODO:
+	# - analyze_fixups_add_globals() sets globals to type of parent object; this is
+	#   flawed, e.g. MK2.EXE, object 2, DO_BABALITY, value at 0x2dbe1 belongs to
+	#   preceding 'call' instruction!
+	# - not really sure if this is a good position
+	# - does currently not belong to any group of actions; could make this part of preprocessing
 	analyze_fixups_add_globals(disasm["objects"], disasm["globals"], disasm["fixups"])
+
+
+	# TESTING: Execution flow tracing to identify code blocks (aka 'branch tracing'/'tracing disassembler')
+	if (False):
+		logging.info("")
+		logging.info("Tracing execution flow to identify code blocks:")
+		ep_obj = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "object # for initial eip")
+		ep_ofs = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "initial eip")
+		if (ep_obj != None and ep_ofs != None):
+			(blk_list, blk_map) = trace_execution_flow(wdump, disasm["objects"], ep_obj, ep_ofs, fusrc_map, objdump_exec)
+			write_file(outfile_template % "disasm_data_codeblocks.txt", format_pprint(blk_list))
+		else:
+			logging.warning("LE header does not contain entries for entry object/offset, skipping trace")
+		return
 
 
 	# Build data maps for code objects
@@ -1707,6 +2088,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 	# disassembly will still be generated and can then be studied for issues
 	# TODO:
 	# Improve error output; currently, it's hard to figure out what exactly went wrong
+	# in case of an error
 	def generate_plain_disassembly(object):
 		logging.debug("Generating plain disassembly for object %d..." % object["num"])
 		object["disasm plain"] = []
@@ -1757,6 +2139,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 
 	# Process disassembly of code objects, analyze branches and add corresponding
 	# globals
+	#
 	# TODO:
 	# Need to process fixups here to fix 'faulty' calls/jumps in MK2.EXE. Those
 	# calls/jumps point to code in data object (i.e. object 2), e.g. DO_BABALITY
@@ -1770,9 +2153,13 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 	# -> if existing, modify global matching fixup target address to be of type
 	#    'code'; if missing, add global of type 'code' for target address
 	# -> discovered code needs to be analyzed, too (branches, access sizes); this
-	#    can lead to further code blocks... -> needs to be done recursive
+	#    can lead to further code blocks... -> needs to be done recursively
 	# -> this will require putting the whole 'Analyzing plain disassembly' block
-	#    into a function so it can be called for newly discovered code blocks
+	#    in a function so it can be called for newly discovered code blocks
+	#
+	# -> work in progress; stuff here is pretty much done, need to continue in
+	#    generate_formatted_disassembly() to eliminate 'failed to match fixup
+	#    target offset' and 'no global in map for' warnings (test with MK2.EXE)
 	logging.debug("Analyzing branches...")
 	added_globals = 0
 	known_globals = { (item["object"], item["offset"]): item for item in disasm["globals"] }
@@ -1789,11 +2176,38 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 			if (match == None):
 				#logging.warning("Failed to match offset: line %d: %s" % (i+1, line))
 				continue
-			offset = int(match.group(1), 16)
-			if ((object["num"], offset) in known_globals):
+
+			#offset = int(match.group(1), 16)										# old logic before fixups (see below)
+			#if ((object["num"], offset) in known_globals):
+			#	continue
+			#disasm["globals"].append(OrderedDict([("name", None), ("module", None), ("object", object["num"]), ("offset", offset), ("type", object["type"]), ("source", "branch analysis")]))
+			#known_globals[(object["num"], offset)] = disasm["globals"][-1]
+			#added_globals += 1
+
+			bt_obj = object["num"]													# assume branch within same object (fixup may override)
+			bt_ofs = int(match.group(1), 16)										# assume offset is correct (fixup may override)
+			fixups = get_fixups_for_offset(fusrc_map, object["num"], asm["offset"], asm["offset"] + len(asm["data"]), True)
+			if (len(fixups) > 1):													# multiple fixups for branch (should never happen)
+				logging.error("Multiple fixups for branch: %s" % line)
+				for fixup in fixups:
+					logging.error(format_fixup(fixup))
 				continue
-			disasm["globals"].append(OrderedDict([("name", None), ("module", None), ("object", object["num"]), ("offset", offset), ("type", object["type"]), ("source", "branch analysis")]))
-			known_globals[(object["num"], offset)] = disasm["globals"][-1]
+			if (len(fixups) == 1):													# exactly one fixup -> fixup takes precedence as it is
+				fixup = fixups[0]													# much more credible/reliable (i.e. overrides target)
+				if (fixup["target object"] != bt_obj or fixup["target offset"] != bt_ofs):
+					logging.warning("Fixup takes precedence: %s" % format_fixup(fixup))
+					logging.warning("before: %s" % line.strip())
+					ofs_str = match.group(0)										# entire offset string including leading '0x'
+					line = line.replace(ofs_str, "0x%x" % fixup["target offset"])	# replace offset (likely garbage due to call/jump stub)
+					object["disasm plain"][i] = line								# with fixup target offset and update disassembly line
+					logging.warning("after:  %s" % line.strip())
+				bt_obj = fixup["target object"]
+				bt_ofs = fixup["target offset"]
+			if ((bt_obj, bt_ofs) in known_globals):
+				known_globals[(bt_obj, bt_ofs)]["type"] = "code"
+				continue
+			disasm["globals"].append(OrderedDict([("name", None), ("module", None), ("object", bt_obj), ("offset", bt_ofs), ("type", "code"), ("source", "branch analysis")]))
+			known_globals[(bt_obj, bt_ofs)] = disasm["globals"][-1]
 			added_globals += 1
 	disasm["globals"].sort(key=lambda item: (item["object"], item["offset"]))
 	logging.debug("Added %d globals for branches" % added_globals)
@@ -2030,6 +2444,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		# but currently, sizes are only added as comments for variables in generate_formatted_disassembly()
 		logging.debug("Adding globals...")
 		added_functions = 0
+		added_references = 0
 		added_branches = 0
 		added_variables = 0
 		added_total = 0
@@ -2042,14 +2457,15 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 				if (global_["source"] == "debug info"):
 					sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "function"), ("start", global_["offset"]), ("end", None), ("length", None), ("name", global_["name"]), ("label", global_["name"]), ("source", global_["source"])]))
 					added_functions += 1
-				elif (global_["source"] == "fixup data"):
-					#sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "reference"), ("start", global_["offset"]), ("name", global_["name"]), ("label", global_["name"])]))
-					#sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "branch"), ("start", global_["offset"]), ("end", None), ("length", None), ("name", global_["name"]), ("label", global_["name"]), ("source", global_["source"])]))
-					sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "reference"), ("start", global_["offset"]), ("end", None), ("length", None), ("name", global_["name"]), ("label", global_["name"]), ("source", global_["source"])]))
-					added_branches += 1
 				elif (global_["source"] == "branch analysis"):
 					sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "branch"), ("start", global_["offset"]), ("end", None), ("length", None), ("name", global_["name"]), ("label", global_["name"]), ("source", global_["source"])]))
 					added_branches += 1
+				elif (global_["source"] == "fixup data"):
+					#sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "reference"), ("start", global_["offset"]), ("name", global_["name"]), ("label", global_["name"])]))
+					#sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "branch"), ("start", global_["offset"]), ("end", None), ("length", None), ("name", global_["name"]), ("label", global_["name"]), ("source", global_["source"])]))
+					#added_branches += 1
+					sitem = insert_structure_item(object["disasm structure"], OrderedDict([("type", "reference"), ("start", global_["offset"]), ("end", None), ("length", None), ("name", global_["name"]), ("label", global_["name"]), ("source", global_["source"])]))
+					added_references += 1
 				else:
 					logging.error("Invalid global source: '%s'" % global_["source"])
 					continue
@@ -2070,7 +2486,8 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 			assert not id(sitem) in sitem_global_map
 			sitem_global_map[id(sitem)] = global_
 		#logging.debug("Added %d globals (%d functions, %d branches, %d variables), %d incomplete" % (added_total, added_functions, added_branches, added_variables, len(incomplete_map)))
-		logging.debug("Added %d globals (%d functions, %d branches, %d variables)" % (added_total, added_functions, added_branches, added_variables))
+		#logging.debug("Added %d globals (%d functions, %d branches, %d variables)" % (added_total, added_functions, added_branches, added_variables))
+		logging.debug("Added %d globals (%d functions, %d branches, %d variables, %d references)" % (added_total, added_functions, added_branches, added_variables, added_references))
 
 		if (object["type"] == "code"):
 			logging.debug("Adding bad code sections...")
@@ -2131,6 +2548,13 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		# - size unsized items and update associated globals
 		# NOTE: relies on sitem_global_map created above
 		# NOTE: relies on parent_nums declared outside of loop
+		# TODO:
+		# - handling of type 'reference' needs to be checked/verified (was added later)
+		# - in '[Sizing] These kinds of items terminate the last currently tracked item',
+		#   the if statement contradicts the comment 'if it is the same kind'; currently,
+		#   each item type can terminate any of the other item types, e.g. a variable
+		#   can terminate a branch; seems to work fine though, maybe the comment is wrong
+		#   ...
 		logging.debug("Finalizing structure...")
 		parent = None
 		#parent_nums = {} # declared outside of loop, see above
@@ -2184,9 +2608,9 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 				sitems_to_size = []
 
 			# [Sizing] These kinds of items terminate the last currently tracked item if
-			#          its the same kind. Untrack item, set end, determine size, update
+			#          it is the same kind. Untrack item, set end, determine size, update
 			#          associated global
-			elif (sitem["type"] in ("branch", "variable") and len(sitems_to_size) > 0 and sitems_to_size[-1]["type"] in ("branch", "variable") and sitems_to_size[-1]["source"] != "debug info"):
+			elif (sitem["type"] in ("branch", "variable", "reference") and len(sitems_to_size) > 0 and sitems_to_size[-1]["type"] in ("branch", "variable", "reference") and sitems_to_size[-1]["source"] != "debug info"):
 				sitem2 = sitems_to_size.pop()
 				sitem2["end"] = sitem["start"]
 				sitem2["length"] = sitem2["end"] - sitem2["start"]
@@ -2197,7 +2621,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 					sized_globals += 1
 
 			# [Sizing] Track items that need to be sized
-			if (sitem["type"] in ("function", "branch", "variable")):
+			if (sitem["type"] in ("function", "branch", "variable", "reference")):
 				sitems_to_size.append(sitem)
 
 		logging.debug("Named %d structure items and %d globals" % (named_sitems, named_globals))
@@ -2279,6 +2703,8 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 						mode = "fwords"
 					elif ("QWORD" in sitem["access sizes"] or "QWORDS" in sitem["access sizes"]):
 						mode = "qwords"
+					elif ("TBYTE" in sitem["access sizes"] or "TBYTES" in sitem["access sizes"]):
+						mode = "tbytes"
 					else:
 						logging.error("Failed to interpret access size: %s" % (str(sitem["access sizes"])))
 						mode = "default"
@@ -2288,8 +2714,13 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 
 			try:
 				insert_data_map_item(object["data map"], OrderedDict([("start", sitem["start"]), ("end", sitem["end"]), ("type", type_), ("mode", mode), ("source", "structure")]))
-			except DataMapInsertError as dmie:
-				logging.warning("%s: sitem: type: %s, start: 0x%x, end: 0x%x, length: 0x%x (%d), name: %s, label: %s" % (str(dmie), sitem["type"], sitem["start"], sitem["end"], sitem["length"], sitem["length"], sitem["name"], sitem["label"]))
+			#except DataMapInsertError as dmie:
+			#	logging.warning("%s: sitem: type: %s, start: 0x%x, end: 0x%x, length: 0x%x (%d), name: %s, label: %s" % (str(dmie), sitem["type"], sitem["start"], sitem["end"], sitem["length"], sitem["length"], sitem["name"], sitem["label"]))
+			# [FIXME] FATAL.EXE contains wrongly decoded / invalid fixup item:
+			# sitem: OrderedDict([('type', 'variable'), ('start', 4294393925), ('end', None), ('length', None), ('name', 'cstart variable 1'), ('label', 'cstart_variable_1'), ('source', 'fixup data')])
+			except Exception as exception:
+				logging.warning("[FIXME] Failed to insert data map item: %s:" % str(exception))
+				logging.warning(str(sitem))
 
 	logging.debug("Data map for object %d has %d entries" % (object["num"], len(object["data map"])))
 
@@ -2354,6 +2785,53 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		generate_formatted_disassembly(object, disasm["globals"], fixrel)
 
 
+	# TESTING: Generate hints for assumed data portions of code objects
+	#
+	# This stems from the observation that data regions in code objects almost
+	# always have access sizes assigned to them (which are discovered during
+	# step 'Analyzing access sizes...'), while actual code regions have not
+	# -> this works surprisingly well, BUT output needs to be used iteratively,
+	#    i.e. use first output set, apply, run again, use next output set, ...,
+	#    until results stabilize; this is due to sizing of items based on re-
+	#    ferences that come from analyzing bad code/data
+	# -> not sure if this can ever be a 'real' feature due to the manual work
+	#    required to make use of the output, but it's certainly helpful
+	# TODO:
+	# - add support for multiple access sizes (i.e. len(sitem["access sizes"])
+	#   != 1) by using the smallest access size present in the set
+	logging.info("")
+	logging.info("Possible object hints for code objects:")
+	for object in [ item for item in disasm["objects"] if (item["type"] == "code") ]:
+
+		logging.debug("Object %d:" % object["num"])
+
+		hint_map_dupes = {}
+		hint_map_similar = {}
+		for hint in object["hints"]:
+			hint_map_dupes[(hint["start"], hint["end"], hint["length"], hint["type"], hint["mode"])] = hint
+			hint_map_similar[(hint["start"], hint["type"])] = hint
+
+		hint_count = 0
+		for sitem in object["disasm structure"]:
+			if (sitem["start"] != None and sitem["end"] != None and "access sizes" in sitem and len(sitem["access sizes"]) == 1):
+				temp = sitem["access sizes"][0]
+				if (not temp.endswith("S")):
+					temp += "S"
+				mode = temp.lower()
+				comment = temp
+				if ((sitem["start"], sitem["end"], sitem["length"], "data", mode) in hint_map_dupes): # skip exact duplicates
+					continue
+				if ((sitem["start"], "data") in hint_map_similar): # reuse hint index for similar hints
+					hint_index = hint_map_similar[(sitem["start"], "data")]["num"]
+					logging.debug("%s) start = %08XH, end = %08XH, type = data, mode = %s, comment = Data (%s)" % (hint_index, sitem["start"], sitem["end"], mode, comment))
+				else:
+					logging.debug("x) start = %08XH, end = %08XH, type = data, mode = %s, comment = Data (%s)" % (sitem["start"], sitem["end"], mode, comment))
+				hint_count += 1
+
+		if (hint_count == 0):
+			logging.debug("<none>")
+
+
 	# Write results to files
 	logging.info("")
 	logging.info("Writing disassembly results to files:")
@@ -2377,6 +2855,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 
 	# TESTING: Split formatted disassembly into separate files
 	# NOTE: relies on module maps being generated by generate_formatted_disassembly()
+	# TODO: use os.path.join() to generate paths instead of using os.path.sep
 	logging.info("")
 	logging.info("Splitting formatted disassembly into separate files:")
 	output_library = []
@@ -2391,7 +2870,8 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 				if (len(output_module) > 0):
 					output_module.append("")
 				output_module += object["disasm formatted"][entry["start"]:entry["end"]]
-		file_name = ntpath.basename(module["name"])
+		#file_name = ntpath.basename(module["name"])
+		file_name = module["name"].replace(":", "").replace("\\", os.path.sep) # recreate original folder structure; see https://github.com/fonic/wcdatool/issues/9#issuecomment-1140869764
 		if (not "." in file_name.lower()): # library modules just have names (i.e. no extension)
 			output_library += output_module
 			modules_library += 1
@@ -2399,9 +2879,11 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		if (not file_name.lower().endswith(".asm")):
 			file_name += ".asm"
 		#logging.debug("File '%s'..." % file_name)
-		write_file(outfile_template % "modules/%s" % file_name, output_module)
+		#write_file(outfile_template % "modules/%s" % file_name, output_module)
+		write_file(outfile_template % ("modules" + os.path.sep + file_name), output_module)
 		modules_separate += 1
-	write_file(outfile_template % "modules/library.asm", output_library)
+	#write_file(outfile_template % "modules/library.asm", output_library)
+	write_file(outfile_template % ("modules" + os.path.sep + "library.asm"), output_library)
 	logging.debug("Wrote %d modules to separate files" % modules_separate)
 	logging.debug("Wrote %d modules to 'library.asm'" % modules_library)
 

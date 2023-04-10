@@ -7,7 +7,7 @@
 #  Main Part Fixup / Relocation                                           -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 08/18/20                                              -
+#  Date: 06/20/19 - 02/06/22                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -129,6 +129,12 @@ def fixup_get_string(buffer, offset, length, name=None, encoding="ascii"):
 #
 # -> for each pair, always record for page[i] + record for page[i+1]
 # -> for each pair, always same distance of source offsets to boundary
+#
+# NOTE:
+# 'source offset' is relative to the parent page of a fixup record (signed
+# 16 bit value). Since this is not of much use later on, 'source offset 2'
+# is calculated and stored for each record (unsigned 32 bit value; relative
+# to object, i.e. basically 'absolute')
 #
 def fixup_relocation_read_decode(wdump, input_file, outfile_template):
 	logging.info("")
@@ -262,16 +268,16 @@ def fixup_relocation_read_decode(wdump, input_file, outfile_template):
 				rte["target flags ordinal type"] = (rte["target flags"] >> 7) & 0x01	# flag -> if set, ordinal number is 8 bits, otherwise 16 bits
 
 				# Add source object number
-				rte["source object"] = None												# not part of record data, will be filled when processing objects/pages/segments below; initialized her for dict order
+				rte["source object"] = None												# not part of record data, will be filled when processing objects/pages/segments below; initialized here for dict order
 
-				# Read source offset field												# either byte containing number of source offset list entries or word containing source offset (NOTE: offset is signed!)
+				# Read source offset field												# either byte containing number of source offset list entries or word (16 bits) containing source offset (NOTE: offset is signed!)
 				if (rte["source flags list"] == 1):
 					rte["source offset list"] = OrderedDict()							# will be filled after 'read target data'; initialized here for dict order
-					rte["source offset list 2"] = OrderedDict()							# not part of record data, will be filled when processing objects/pages/segments below; initialized her for dict order
+					rte["source offset list 2"] = OrderedDict()							# not part of record data, will be filled when processing objects/pages/segments below; initialized here for dict order
 					(rte["source offset list length"], offset) = fixup_get_value(pte["data"], offset, 1, "source offset list length")
 				else:
 					(rte["source offset"], offset) = fixup_get_value(pte["data"], offset, 2, "source offset", signed=True)
-					rte["source offset 2"] = None										# not part of record data, will be filled when processing objects/pages/segments below; initialized her for dict order
+					rte["source offset 2"] = None										# not part of record data, will be filled when processing objects/pages/segments below; initialized here for dict order
 
 				# Read target data														# variable contents and sizes depending on target flags
 				if (rte["target flags type"] == 0x00):									# 0x00h = Internal reference
@@ -299,7 +305,7 @@ def fixup_relocation_read_decode(wdump, input_file, outfile_template):
 					logging.warning("Page %d, record %d: invalid target type: %d (0x%x), aborting decode" % (pte["num"], record_num, rte["target flags type"], rte["target flags type"]))
 					break
 
-				# Read source offset list												# list of words, only present if corresponding flag in source flags is set (NOTE: offsets are signed!)
+				# Read source offset list												# list of words (16 bits), only present if corresponding flag in source flags is set (NOTE: offsets are signed!)
 				if (rte["source flags list"] == 1):
 					rte["source offset list"] = OrderedDict()
 					for i in range(1, rte["source offset list length"]+1):

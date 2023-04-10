@@ -6,7 +6,7 @@
 #  Watcom Disassembly Tool (wcdatool)                                     -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 04/06/22                                              -
+#  Date: 06/20/19 - 04/09/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -41,6 +41,7 @@ try:
 	from modules.module_miscellaneous import *
 	from modules.main_wdump import *
 	from modules.main_fixup_relocation import *
+	#from modules.main_disassembler_legacy import *
 	from modules.main_disassembler import *
 except ImportError as error:
 	sys.stderr.write("Failed to import required module:\n%s\n" % error)
@@ -74,8 +75,8 @@ def main():
 	set_window_title(app_title)
 
 	# Process command line
-	#parser = ArgumentParser(description="Tool to aid decompiling DOS applications created with the Watcom toolchain.", argument_default=argparse.SUPPRESS, allow_abbrev=False, add_help=False)
-	parser = ArgumentParser(description="Tool to aid decompiling DOS applications created with the Watcom toolchain.", allow_abbrev=False, add_help=False)
+	#parser = ArgumentParser(description="Tool to aid disassembling DOS applications created with the Watcom toolchain.", argument_default=argparse.SUPPRESS, allow_abbrev=False, add_help=False)
+	parser = ArgumentParser(description="Tool to aid disassembling DOS applications created with the Watcom toolchain.", allow_abbrev=False, add_help=False)
 	parser.add_argument("-wde", "--wdump-exec", action="store", dest="wdump_exec", metavar="PATH", type=str, default="wdump", help="Path to wdump executable")
 	parser.add_argument("-ode", "--objdump-exec", action="store", dest="objdump_exec", metavar="PATH", type=str, default="objdump", help="Path to objdump executable")
 	parser.add_argument("-wdo", "--wdump-output", action="store", dest="wdump_output", metavar="PATH", type=str, help="Path to file containing pre-generated wdump output to read/parse instead of running wdump")
@@ -86,7 +87,7 @@ def main():
 	parser.add_argument("-id", "--interactive-debugger", action="store_true", dest="ia_debug", help="Drop to interactive debugger before exiting to allow inspecting internal data structures")
 	parser.add_argument("-is", "--interactive-shell", action="store_true", dest="ia_shell", help="Drop to interactive shell before exiting to allow inspecting internal data structures")
 	parser.add_argument("-h", "--help", action="help", help="Display usage information (this message)")
-	parser.add_argument("input_file", action="store", metavar="FILE", type=str, help="Path to input executable to decompile (.exe file)")
+	parser.add_argument("input_file", action="store", metavar="FILE", type=str, help="Path to input executable to disassemble (.exe file)")
 	cmd_args = parser.parse_args()
 
 	# Force-set ANSI mode if requested
@@ -118,6 +119,7 @@ def main():
 		return 2
 
 	# Define output file template
+	# TODO: use os.path.join() to generate path instead of using os.path.sep
 	outfile_template = cmd_args.output_dir + os.path.sep if (cmd_args.output_dir != None) else ""
 	outfile_template += os.path.basename(cmd_args.input_file) + "_%s"
 
@@ -151,7 +153,7 @@ def main():
 
 	# Detect and extract DOS/4G(W) stub / payload
 	# NOTE: this is necessary as wdump will only yield usable results for the payload
-	# TODO: would it make sense to put this in a module? -> modules/main_splitter.py
+	# TODO: would it make sense to put this in a module? -> 'modules/main_splitter.py'
 	if (dict_path_exists(wdump, "dos/16m exe header", "data", "offset of possible next spliced .exp")):
 		offset = wdump["dos/16m exe header"]["data"]["offset of possible next spliced .exp"]
 		logging.info("")
@@ -179,7 +181,7 @@ def main():
 
 	# Detect and extract linear executable stub / payload
 	# NOTE: this is solely to allow further examination of the extracted files, they are not used anywhere in this script
-	# TODO: would it make sense to put this in a module? -> modules/main_splitter.py
+	# TODO: would it make sense to put this in a module? -> 'modules/main_splitter.py'
 	if (dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "file offset")):
 		offset = wdump["linear exe header (os/2 v2.x) - le"]["data"]["file offset"]
 		logging.info("")

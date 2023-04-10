@@ -1,0 +1,117 @@
+
+                                 Object Hints
+==============================================================================
+
+# ----------------------------------------------------------------------------
+#                                                                            -
+#  Created by Fonic <https://github.com/fonic>                               -
+#  Date: 05/29/22 - 06/03/22                                                 -
+#                                                                            -
+#  Refer to this issue for details:                                          -
+#  https://github.com/fonic/wcdatool/issues/9                                -
+#                                                                            -
+# ----------------------------------------------------------------------------
+
+Object 1:
+# Auto-generated, manually fine-tuned
+100) start = 00003824H, end = 000038FCH, type = data, mode = dwords, comment = DWORDS
+101) start = 000038FCH, end = 0000390CH, type = data, mode = dwords, comment = DWORDS
+102) start = 0000390CH, end = 0000391CH, type = data, mode = dwords, comment = DWORDS
+103) start = 0000391CH, end = 00003948H, type = data, mode = dwords, comment = DWORDS
+104) start = 00003948H, end = 00003974H, type = data, mode = dwords, comment = DWORDS
+105) start = 00003974H, end = 00003988H, type = data, mode = dwords, comment = DWORDS
+106) start = 00003988H, end = 000039A4H, type = data, mode = dwords, comment = DWORDS
+107) start = 000039A4H, end = 000039E8H, type = data, mode = dwords, comment = DWORDS
+108) start = 000039E8H, end = 00003A10H, type = data, mode = dwords, comment = DWORDS
+109) start = 000050E8H, end = 00005108H, type = data, mode = dwords, comment = DWORDS
+110) start = 00005108H, end = 00005120H, type = data, mode = dwords, comment = DWORDS
+111) start = 00008224H, end = 00008250H, type = data, mode = dwords, comment = DWORDS
+112) start = 00009340H, end = 00009360H, type = data, mode = dwords, comment = DWORDS
+113) start = 0000D720H, end = 0000D740H, type = data, mode = dwords, comment = DWORDS
+114) start = 0000DE00H, end = 0000DE40H, type = data, mode = dwords, comment = DWORDS
+115) start = 000157BCH, end = 000157CCH, type = data, mode = dwords, comment = DWORDS
+116) start = 000157CCH, end = 000157E0H, type = data, mode = dwords, comment = DWORDS
+117) start = 00019620H, end = 00019640H, type = data, mode = dwords, comment = DWORDS
+118) start = 0001C508H, end = 0001C52CH, type = data, mode = dwords, comment = DWORDS
+119) start = 0001C52CH, end = 0001C550H, type = data, mode = dwords, comment = DWORDS
+120) start = 0001C550H, end = 0001C578H, type = data, mode = dwords, comment = DWORDS
+121) start = 0001C578H, end = 0001C5A0H, type = data, mode = dwords, comment = DWORDS
+122) start = 0001F028H, end = 0001F040H, type = data, mode = dwords, comment = DWORDS
+123) start = 00021B80H, end = 00021BA0H, type = data, mode = dwords, comment = DWORDS
+124) start = 0002B554H, end = 0002B580H, type = data, mode = dwords, comment = DWORDS
+125) start = 0002B7E0H, end = 0002B810H, type = data, mode = dwords, comment = DWORDS
+126) start = 0002C35CH, end = 0002C4FCH, type = data, mode = dwords, comment = DWORDS
+127) start = 0002C4FCH, end = 0002C530H, type = data, mode = dwords, comment = DWORDS
+128) start = 0002F760H, end = 0002F780H, type = data, mode = dwords, comment = DWORDS
+129) start = 0002F780H, end = 0002F7B0H, type = data, mode = dwords, comment = DWORDS
+130) start = 000311B0H, end = 000311D0H, type = data, mode = dwords, comment = DWORDS
+131) start = 00031C70H, end = 00031CA0H, type = data, mode = dwords, comment = DWORDS
+132) start = 00032BB8H, end = 00032BD4H, type = data, mode = dwords, comment = DWORDS
+133) start = 00032BD4H, end = 00032BF4H, type = data, mode = dwords, comment = DWORDS
+134) start = 00032BF4H, end = 00032C14H, type = data, mode = dwords, comment = DWORDS
+135) start = 00032C14H, end = 00032C38H, type = data, mode = dwords, comment = DWORDS
+136) start = 00032C38H, end = 00032C48H, type = data, mode = dwords, comment = DWORDS
+137) start = 00032C48H, end = 00032C58H, type = data, mode = dwords, comment = DWORDS
+138) start = 00032C58H, end = 00032C78H, type = data, mode = dwords, comment = DWORDS
+139) start = 00032C78H, end = 00032C8CH, type = data, mode = dwords, comment = DWORDS
+140) start = 00032C8CH, end = 00032CB0H, type = data, mode = dwords, comment = DWORDS
+141) start = 00032CB0H, end = 00032CF4H, type = data, mode = dwords, comment = DWORDS
+142) start = 00032CF4H, end = 00032D18H, type = data, mode = dwords, comment = DWORDS
+143) start = 00032D18H, end = 00032D40H, type = data, mode = dwords, comment = DWORDS
+144) start = 00036FC4H, end = 00036FD4H, type = data, mode = dwords, comment = DWORDS
+145) start = 00036FD4H, end = 00036FE4H, type = data, mode = dwords, comment = DWORDS
+146) start = 00036FE4H, end = 00037000H, type = data, mode = dwords, comment = DWORDS
+147) start = 00037A98H, end = 00037AACH, type = data, mode = dwords, comment = DWORDS
+148) start = 00037AACH, end = 00037AC4H, type = data, mode = dwords, comment = DWORDS
+149) start = 00037AC4H, end = 00037AE0H, type = data, mode = dwords, comment = DWORDS
+150) start = 0003A54CH, end = 0003A5C0H, type = data, mode = dwords, comment = DWORDS
+151) start = 0003AF00H, end = 0003AF2CH, type = data, mode = dwords, comment = DWORDS
+152) start = 0003AF2CH, end = 0003AF40H, type = data, mode = dwords, comment = DWORDS
+153) start = 0003AF40H, end = 0003AF5CH, type = data, mode = dwords, comment = DWORDS
+154) start = 0003AF5CH, end = 0003AF80H, type = data, mode = dwords, comment = DWORDS
+155) start = 0003FB50H, end = 0003FBA0H, type = data, mode = dwords, comment = DWORDS
+156) start = 00040168H, end = 000401B0H, type = data, mode = dwords, comment = DWORDS
+157) start = 00040A08H, end = 00040A60H, type = data, mode = dwords, comment = DWORDS
+158) start = 000427B0H, end = 000427C0H, type = data, mode = dwords, comment = DWORDS
+159) start = 0004E260H, end = 0004E270H, type = data, mode = dwords, comment = DWORDS
+160) start = 0004E270H, end = 0004E280H, type = data, mode = dwords, comment = DWORDS
+161) start = 0004E280H, end = 0004E290H, type = data, mode = dwords, comment = DWORDS
+162) start = 0004E290H, end = 0004E300H, type = data, mode = dwords, comment = DWORDS
+163) start = 00056C9CH, end = 00056CC0H, type = data, mode = dwords, comment = DWORDS
+164) start = 00057278H, end = 000572A8H, type = data, mode = dwords, comment = DWORDS
+165) start = 000572A8H, end = 000572C0H, type = data, mode = dwords, comment = DWORDS
+166) start = 00062990H, end = 000629A0H, type = data, mode = dwords, comment = DWORDS
+167) start = 000629A0H, end = 000629C0H, type = data, mode = dwords, comment = DWORDS
+168) start = 000661C4H, end = 000661E0H, type = data, mode = dwords, comment = DWORDS
+169) start = 000661E0H, end = 0006624CH, type = data, mode = dwords, comment = DWORDS
+170) start = 0006624CH, end = 00066270H, type = data, mode = dwords, comment = DWORDS
+171) start = 00066C04H, end = 00066C30H, type = data, mode = dwords, comment = DWORDS
+172) start = 000683C0H, end = 000683D0H, type = data, mode = dwords, comment = DWORDS
+173) start = 0006A794H, end = 0006A796H, type = data, mode = words, comment = WORDS
+174) start = 0006B960H, end = 0006B96AH, type = data, mode = tbytes, comment = TBYTES
+175) start = 000717FAH, end = 0007180AH, type = data, mode = dwords, comment = DWORDS
+176) start = 000724AAH, end = 000724F6H, type = data, mode = dwords, comment = DWORDS
+177) start = 0007B060H, end = 0007B068H, type = data, mode = qwords, comment = QWORDS
+178) start = 0007B068H, end = 0007B070H, type = data, mode = qwords, comment = QWORDS
+#179) start = 0007DD86H, end = 0007DDABH, type = data, mode = bytes, comment = BYTES
+#180) start = 0007DE1CH, end = 0007DE41H, type = data, mode = bytes, comment = BYTES
+179) start = 0007DD86H, end = 0007DDABH, type = data, mode = string, comment = String
+180) start = 0007DE1CH, end = 0007DE41H, type = data, mode = string, comment = String
+# Manually added
+# Module 0 (C:\PROJECTS\ROLLER\3d.c), 3d_c_reference_1:
+200) start = 00000010H, end = 00000020H, type = data, mode = bytes, comment = Data (?)
+# Module 56 (cstart), Function '_cstart_', offset 0x6a720:
+201) offset = 0006A722H, length = 0000006BH, type = data, mode = string, comment = Watcom Copyright Notice
+202) offset = 0006A78DH, length = 00000003H, type = code, mode = default, comment = 3 nop instructions (?)
+203) offset = 0006A790H, length = 00000004H, type = data, mode = dwords, comment = Reference to '@obj1:___begtext' (?)
+204) offset = 0006A794H, length = 00000002H, type = data, mode = words, comment = Word (?)
+205) offset = 0006A796H, length = 00000004H, type = data, mode = string, comment = String 'con' (?)
+# Module 228 (i64tos), Function '__Bin2String', __Bin2String_branch_6, offset 0x7e883:
+206) start = 0007E888H, end = 0007E938H, type = data, mode = bytes, comment = Data (?)
+
+Object 2:
+# Manually added
+200) start = 00000093H, end = 00001000H, type = data, mode = bytes, comment = Data (?)
+
+Object 3:
+# <nothing atm>
