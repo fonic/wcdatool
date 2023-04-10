@@ -1,7 +1,7 @@
 
 Changelog for v3.0 release:
 
-- added support for *TBYTES* (thanks to [halamix2](#12) for adding to this) (e.g. FATAL.EXE, PYL.EXE)
+- added support for *TBYTES* (thanks to [halamix2](https://github.com/fonic/wcdatool/pull/12) for adding to this) (e.g. FATAL.EXE, PYL.EXE)
 
 - implemented workaround for *fixup records lacking a target offset* (although not entirely sure what those are actually about) (e.g. FATAL.EXE, PYL.EXE)
 
