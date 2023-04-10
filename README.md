@@ -32,13 +32,13 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
 1. Requirements:
 
-   Wcdatool: *Python >= 3.6.0*, *wdump* (part of *Open Watcom*), *objdump* (part of [binutils](https://sourceware.org/binutils/))<br/>
+   Wcdatool: *Python >= 3.6.0*, *wdump* (part of [Open Watcom v2](https://open-watcom.github.io/)), *objdump* (part of [binutils](https://sourceware.org/binutils/))<br/>
    (both *wdump* and *objdump* need to be accessible via `PATH`)
 
    Open Watcom v2: *gcc* -or- *clang* (for 64-bit builds), *DOSEMU* -or- *DOSBox* (for *wgml* utility)<br/>
    (only relevant if *Open Watcom v2* is built from sources; the project also provides [pre-compiled binaries](https://github.com/open-watcom/open-watcom-v2/releases))
 
-2. Download wcdatool:
+2. Clone *wcdatool*'s repository (-or- download and extract a [release](https://github.com/fonic/wcdatool/releases)):
    ```
    # git clone https://github.com/fonic/wcdatool.git
    ```
@@ -57,7 +57,6 @@ There are multiple ways to use *wcdatool*, but the following instructions should
    # cp <source-dir>/MK1.EXE wcdatool/Executables
    # cp <source-dir>/MK2.EXE wcdatool/Executables
    # cp <source-dir>/MK3.EXE wcdatool/Executables
-   # cp <source-dir>/MKTRIL.EXE wcdatool/Executables
    ```
    **NOTE:** file names of executables are used to locate corresponding object hint files (see step 5)
 
@@ -67,7 +66,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
    **NOTE:** hint files must be stored as `wcdatool/Hints/<name-of-executable>.txt` (case-sensitive, e.g. `wcdatool/Executables/MK1.EXE` -> `wcdatool/Hints/MK1.EXE.txt`) to be picked up automatically by the included scripts
 
-6. Let *wcdatool* process all provided executables (for the executables listed in step 4, this will take 5-10 min. and generate ~2.5 GB worth of data):
+6. Let *wcdatool* process all provided executables (for the executables listed in step 4, this will take ~4min. and generate ~2GB worth of data):
    ```
    # wcdatool/Scripts/process-all-executables.sh
    ```
@@ -102,4 +101,4 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
 ## How to contact me
 
-If you want to get in touch with me, give feedback, ask questions or simply need someone to talk to, please open an [Issue](https://github.com/fonic/wcdatool/issues) here on GitHub. Be sure to leave an email address if you prefer personal/private contact.
+If you want to get in touch with me, give feedback, ask questions or simply need someone to talk to, please open an [Issue](https://github.com/fonic/wcdatool/issues) here on GitHub. Make sure to leave an email address if you prefer personal/private contact.
