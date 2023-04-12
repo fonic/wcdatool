@@ -7,7 +7,7 @@
 #  Main Part Disassembler                                                 -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 04/09/23                                              -
+#  Date: 06/20/19 - 04/10/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -1353,22 +1353,19 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 
 	#
 	# TODO:
-	#
-	# - when done, generate and print list of 'holes' in object data space (i.e. unidentified/unvisited
-	#   portions of an object's data)
-	#
 	# - detect/decode branch via jump table:
 	#   2f8e9:       2e ff 24 85 54 f6 02 00         jmp    DWORD PTR cs:[eax*4+0x2f654]
 	#   -> we can be fairly certain that there is a jump table at 0x2f654
 	#   -> we know that jump tables contain branch locations (branch target object/offset can be obtained
 	#      from fixup data)
 	#   -> problem: we don't know the length of the jump table (i.e. number of entries)
-	#   -> as a heuristic, we could process entries as long as we have consecutive fixups and don't hit a
+	#   -> as a heuristic, we could process entries as long as we have CONSECUTIVE FIXUPS and don't hit a
 	#      global or module end (e.g. would work for MK1.EXE, _AIL_WAV_EOS_reference_1, signal__reference_1,
 	#      _SS_serve_reference_1 and even for dma_asm_variable_1 in object 2; but problematic for tables
 	#      with 'holes', e.g. ailssa_asm_reference_1)
 	#   -> a jump table is a DATA block, thus store it as such in the block list
-	#
+	# - when done, generate and print list of 'holes' in object data space (i.e. unidentified/unvisited
+	#   portions of an object's data)
 	#
 	# DONE:
 	# - detect/decode branch via reference:
@@ -1393,15 +1390,19 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 	blk_list = []
 	blk_map = {}
 
-	# Initialize direct branches list, reference branches, unrecognized branches
-	# list (for debugging only)
+	# Initialize branch tables list + known branch tables map
+	bt_list = []
+	bt_map = {}
+
+	# Initialize list of direct branches, reference branches, unrecognized
+	# branches (all for debugging purposes only); Note that branch tables
+	# already have their own list (see above)
 	db_list = []
 	rb_list = []
 	ub_list = []
 
 	# Add specified start point as initial item to block list + known blocks map
-	# NOTE:
-	# Start point MUST point to code for execution tracing to work
+	# NOTE: start point MUST point to code for execution tracing to work (!)
 	blk_list.append(OrderedDict([("object", start_obj), ("start", start_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
 	blk_map[(start_obj, start_ofs)] = blk_list[-1]
 
@@ -1437,9 +1438,10 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 			continue
 
 		# Search block list for block starting right AFTER current block
-		# -> use start of next block as expected end of current block
-		# -> this is just a smart guess to speed things up; the block might end
-		#    prematurely (e.g. due to 'ret')
+		# -> use start of next block as assumed end of current block
+		# -> this is just a smart guess to speed things up by limiting the amount
+		#    of data to be disassembled; the block might still end prematurely
+		#    (due to 'ret'/'jmp' etc.)
 		end_ofs = object["size"]
 		for item in blk_list:
 			if (item["object"] != block["object"]):
@@ -1499,14 +1501,14 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 							logging.warning("  %s" % format_fixup(fixup))
 						bt_obj = fixup["target object"]
 						bt_ofs = fixup["target offset"]
-					db_list.append(OrderedDict([ ("object", block["object"]), ("line", line)]))
+					db_list.append(OrderedDict([("object", block["object"]), ("line", line)]))
 					if (not (bt_obj, bt_ofs) in blk_map):
 						logging.debug("  New block (direct): object: %d, start: 0x%x, line: %s" % (bt_obj, bt_ofs, line))
 						blk_list.append(OrderedDict([("object", bt_obj), ("start", bt_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
 						blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
 					continue														# branch was handled
 
-				# Reference branch (i.e. indirect branch via memory reference(
+				# Reference branch (i.e. indirect branch via memory reference)
 				match = re.match("^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?0x[0-9a-fA-F]+$", asm["arguments"].strip())
 				if (match):
 					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
@@ -1535,7 +1537,7 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 					bt_obj = fixup["target object"]
 					bt_ofs = fixup["target offset"]
 
-					rb_list.append(OrderedDict([ ("object", block["object"]), ("line", line), ("refs", "(%d, 0x%x) -> (%d, 0x%x) -> (%d, 0x%x)" % (block["object"], asm["offset"], ref_obj, ref_ofs, bt_obj, bt_ofs))]))
+					rb_list.append(OrderedDict([("object", block["object"]), ("line", line), ("refs", "(obj%d, 0x%x) -> (obj%d, 0x%x) -> (obj%d, 0x%x)" % (block["object"], asm["offset"], ref_obj, ref_ofs, bt_obj, bt_ofs))]))
 
 					if (not (bt_obj, bt_ofs) in blk_map):
 						logging.debug("  New block (reference): object: %d, start: 0x%x, line: %s" % (bt_obj, bt_ofs, line))
@@ -1543,7 +1545,85 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 						blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
 					continue
 
-				# TODO: implement handling of branch via jump table
+				# [TODO WIP]: Branch table
+				# 2f719:      2e ff 24 85 44 f6 02 00         jmp    DWORD PTR cs:[eax*4+0x2f644]
+				# -> jump table at 0x2f644 containing references
+				# -> add new blocks for all references in table
+				# -> confirm table contents actually are (usable) references by checking for associated fixups
+				#
+				# TODO:
+				# - store branch table as data block in block list/map
+				# - 'while (True)' needs to be replaced; could use same logic that is used to estimate block end, i.e.
+				#   either use object end or start of next block as end; CAUTION: has to be done for object where branch
+				#   table is located, got nothing to do with where current block is located; BUT also needs to take module
+				#   boundaries into account (see below)
+				# - grabs too many entries for consecutive tables (e.g. MK1.EXE, object 2, TupleTable_variable_1 + runlen)
+				#   does not seem to be a problem for MK1.EXE, but could be problematic for other table constellations
+				#   -> YES, problematic e.g. MK2.EXE, object 2, dma_mk2_variable_1 @0xde0; branch table ends at module
+				#      boundary, but current logic grabs first entry from P1_POWERBAR_NAMES (which is NOT a branch target,
+				#      but a reference to graphics data)
+				# - does currently not work for tables with 'holes' (and probably never will)
+				# - currently, neither offset in branch table reference line nor actual branch table contents are used,
+				#   but only fixups associated with them; not a problem per se as fixups are what we're looking for, but
+				#   should we at least check for and report differences?
+				# - code needs to be checked and verified
+				match = re.match("^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?\[.+0x[0-9a-fA-F]+\]$", asm["arguments"].strip())
+				if (match):
+					logging.debug("  Possible branch table reference: %s" % line)	# check if there is a fixup associated with the offset that points to the table
+					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
+					if (len(fixups) == 0):
+						logging.warning("  No fixup for branch table reference")	# not an error (e.g. MK1.EXE, object 1, 0x39431 -> 0x11c does not reference branch table)
+						continue
+					if (len(fixups) > 1):
+						logging.error("  Multiple fixups for branch table reference")
+						for fixup in fixups:
+							logging.error("  %s" % format_fixup(fixup))
+						continue
+					fixup = fixups[0]
+					table_obj = fixup["target object"]								# located branch table @(object, offset)
+					table_ofs = fixup["target offset"]
+
+					if (table_obj, table_ofs) in bt_map:							# skip known branch tables (already processed)
+						logging.debug("  Branch table is already known")
+						continue
+
+					logging.debug("  New branch table located: object: %d, offset: 0x%x" % (table_obj, table_ofs)) # new branch table, add to list + map
+					bt_list.append(OrderedDict([("object", block["object"]), ("line", line), ("entries", [])]))
+					bt_map[(table_obj, table_ofs)] = bt_list[-1]
+
+					entry_ofs = table_ofs											# iterate over table entries, check if there are fixups associated with the entries (i.e. branch targets)
+					while (True):													# TODO: works for now, but NOT a good approach; what could be used as an end condition?
+						fixups = get_fixups_for_offset(fusrc_map, table_obj, entry_ofs, entry_ofs + 4, True)
+						if (len(fixups) == 0):										# no more consecutive fixups (i.e. end of table reached), ...
+							logging.debug("  End of branch table reached: object: %d, offset: 0x%x" % (table_obj, entry_ofs))
+							break													# ... abort loop
+						elif (len(fixups) > 1):										# multiple fixups for current table entry, ...
+							logging.error("  Multiple fixups for branch table entry: object: %d, offset: 0x%x" % (table_obj, entry_ofs))
+							for fixup in fixups:
+								logging.error("  %s" % format_fixup(fixup))
+							break													# ... abort loop
+						elif (len(fixups) == 1):									# single fixup is what we're looking for
+							fixup = fixups[0]
+							if (fixup["source offset"] != entry_ofs):				# fixup properly aligned to table entry? if not, ...
+								logging.error("  Fixup not aligned to branch table entry: object: %d, offset: 0x%x" % (table_obj, entry_ofs))
+								logging.error("  %s" % format_fixup(fixup))
+								break												# ... abort loop
+
+							bt_obj = fixup["target object"]							# located table entry that is usable branch target
+							bt_ofs = fixup["target offset"]							# TODO: should we check if fixup target actually matches table entry contents? table entries could be stubs, so fixup would take precedence for mismatches either way
+
+							bt_list[-1]["entries"].append(OrderedDict([("object", bt_obj), ("offset", bt_ofs)])) # store all table entries
+
+							if (not (bt_obj, bt_ofs) in blk_map):					# skip known branches (block already created)
+								logging.debug("  New block (branch table entry): object: %d, start: 0x%x" % (bt_obj, bt_ofs))
+								blk_list.append(OrderedDict([("object", bt_obj), ("start", bt_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
+								blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
+								#bt_list[-1]["entries"].append(OrderedDict([("object", bt_obj), ("offset", bt_ofs)])) # store only unique/new table entries
+
+						# Advance entry offset to next (assumed) branch table entry
+						entry_ofs += 4
+
+					continue														# branch was handled
 
 				# Unrecognized branch
 				logging.warning("  Unrecognized branch: %s" % line)
@@ -1571,11 +1651,17 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 		logging.debug("object: %d, line: %s" % (item["object"], item["line"]))
 		logging.debug(item["refs"])
 	logging.debug("")
+	logging.warning("Branch tables (%d):" % len(bt_list))
+	for item in bt_list:
+		logging.debug("object: %d, entries: %d, line: %s" % (item["object"], len(item["entries"]), item["line"]))
+		for i, item2 in enumerate(item["entries"]):
+			logging.debug("  entry %d: object: %d, offset: 0x%x" % (i, item2["object"], item2["offset"]))
+	logging.debug("")
 	logging.warning("Unrecognized branches (%d):" % len(ub_list))
 	for item in ub_list:
 		logging.debug("object: %d, line: %s" % (item["object"], item["line"]))
 	logging.debug("")
-	logging.debug("Identified %d unique blocks" % len(blk_list))
+	logging.debug("Identified %d unique blocks." % len(blk_list)) # TODO: print number of code blocks, data blocks and total
 
 	# Return results
 	return (blk_list, blk_map)
@@ -1858,10 +1944,11 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		ep_ofs = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "initial eip")
 		if (ep_obj != None and ep_ofs != None):
 			(blk_list, blk_map) = trace_execution_flow(wdump, disasm["objects"], ep_obj, ep_ofs, fusrc_map, objdump_exec)
-			write_file(outfile_template % "disasm_data_codeblocks.txt", format_pprint(blk_list))
+			write_file(outfile_template % "disasm_block_list.txt", format_pprint(blk_list))
+			write_file(outfile_template % "disasm_block_map.txt", format_pprint(blk_map))
 		else:
 			logging.warning("LE header does not contain entries for entry object/offset, skipping trace")
-		return
+		return # this is completely separate for now (not yet integrated with the rest that follows)
 
 
 	# Build data maps for code objects
