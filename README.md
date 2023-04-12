@@ -20,11 +20,15 @@ Thus, I began writing my own tool. What originally started out as *mkdecomptool*
 
 Wcdatool is *work in progress*. You can tell from looking at the source code - there's tons of TODO, TESTING, FIXME, etc. flying around. Also, it is relatively slow as performance has not been the main focus.
 
-*Nevertheless, it works quite well in its current state* - you'll get a well-readable, reasonably structured disassembly output (*objdump* format). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far.
+Nevertheless, it works quite well in its current state - you'll get a well-readable, reasonably structured disassembly output (*objdump* format). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far. Please note that wcdatool works best when used on executables that contain debug symbols. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for further testing and development, please let me know.
 
-**Please note that wcdatool works best when used on executables that contain debug symbols.** If you come across other *unstripped* *Watcom*-based DOS applications that may be used for further testing and development, please let me know.
+The *next major goal* is to cleanly rewrite the disassembler module and transition from *static code disassembly* to *execution flow tracing* (e.g. *Mortal Kombat 2* executable contains code within its data object, which is neither discovered nor processed with the current approach).
 
-The *next major goal* is to cleanly rewrite the disassembler module and transition from static code disassembly to branch tracing (e.g. *Mortal Kombat 2* executable contains code within its data object, which is currently neither discovered nor processed).
+## Output sample
+
+Output sample for *Fatal Racing* (`FATAL.EXE`) - the left side shows the reconstructed source files, the right side shows a portion of disassembly:
+
+![screenshot](https://github.com/fonic/wcdatool/raw/master/SCREENSHOT.png)
 
 ## How to use it
 
@@ -62,7 +66,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
 5. Create/update object hint files in `wcdatool/Hints` *(optional; skip when just getting started)*:
 
-   Object hints may be used to manually affect the disassembly process (e.g. force decoding of certain regions as code/data, specify data decoding mode, define data structs, add comments). Please refer to included object hint files for *Mortal Kombat*, *Fatal Racing* and *Pac-Man VR* for details regarding capabilites and syntax.
+   Object hints may be used to manually affect the disassembly process (e.g. force decoding of certain regions as code/data, specify data decoding mode, define data structs, add comments). Please refer to included object hint files for *Mortal Kombat*, *Fatal Racing* and *Pac-Man VR* for details regarding capabilities and syntax.
 
    **NOTE:** hint files must be stored as `wcdatool/Hints/<name-of-executable>.txt` (case-sensitive, e.g. `wcdatool/Executables/MK1.EXE` -> `wcdatool/Hints/MK1.EXE.txt`) to be picked up automatically by the included scripts
 
