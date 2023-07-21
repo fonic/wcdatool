@@ -6,7 +6,7 @@
 #  Watcom Disassembly Tool (wcdatool)                                     -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 04/09/23                                              -
+#  Date: 06/20/19 - 07/21/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ def main():
 	parser.add_argument("-wde", "--wdump-exec", action="store", dest="wdump_exec", metavar="PATH", type=str, default="wdump", help="Path to wdump executable")
 	parser.add_argument("-ode", "--objdump-exec", action="store", dest="objdump_exec", metavar="PATH", type=str, default="objdump", help="Path to objdump executable")
 	parser.add_argument("-wdo", "--wdump-output", action="store", dest="wdump_output", metavar="PATH", type=str, help="Path to file containing pre-generated wdump output to read/parse instead of running wdump")
-	parser.add_argument("-wao", "--wdump-addout", action="store", dest="wdump_addout", metavar="PATH", type=str, help="Path to file containing additional wdump output to read/parse")
+	parser.add_argument("-wao", "--wdump-addout", action="store", dest="wdump_addout", metavar="PATH", type=str, help="Path to file containing additional wdump output to read/parse (mainly used for object hints)")
 	#parser.add_argument("-do", "--data-object", action="store", dest="data_object", metavar="INDEX", type=int, default="auto", help="Index of object 'ds:...' references point to (default: automatic)")
 	parser.add_argument("-od", "--output-dir", action="store", dest="output_dir", metavar="PATH", type=str, default=".", help="Path to output directory for storing generated content")
 	parser.add_argument("-cm", "--color-mode", action="store", dest="color_mode", metavar="VALUE", type=str.lower, choices=["auto", "true", "false"], default="auto", help="Enable color mode (choices: 'auto', 'true', 'false')")

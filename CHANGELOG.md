@@ -1,4 +1,23 @@
 
+Changelog for v3.1 release:
+
+- added algorithm to rename *duplicate globals* to avoid name clashing (unique labels are important/helpful when trying to recompile disassembly as one huge blob)
+
+- added support for *loop instruction* (treated like call/jumps, i.e. loop targets contribute to branch analysis and are replaced with labels in formatted disassembly)
+
+- added script to *compile wcdatool using Cython* (no performance gain yet as wcdatool's Python sources have not yet been decorated/optimized for Cython)
+
+- fixed minor copy&paste mistake (references to non-existing variables in `module_miscellaneous.py`)
+
+- updated object hints for *Pac-Man VR*
+
+- overhauled a number of comments (clarification/updates/typos)
+
+- added wcdatool's usage information to `README.md`
+
+- applied a number of minor changes to `README.md`
+
+
 Changelog for v3.0 release:
 
 - added support for *TBYTES* (thanks to [halamix2](https://github.com/fonic/wcdatool/pull/12) for adding to this) (e.g. FATAL.EXE, PYL.EXE)

@@ -7,7 +7,7 @@
 #  Main Part Disassembler                                                 -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 04/10/23                                              -
+#  Date: 06/20/19 - 05/19/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -379,13 +379,15 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 					#else:									# ASCII non-printable range
 					#	str_parts.append(value)
 
-					if (value >= 32 and value <= 126):		# ASCII printable range
+					#if (value in (0, 7, 8, 9, 10, 13)):	# ASCII non-printable chars (reduced to those that would actually be used in a string)
+					#if (value in (0, 7, 8, 9, 10, 11, 12, 13, 27)):     # ASCII non-printable chars (reduced to those that would actually be used in a string)
+					#if (value in (0, 7, 8, 9, 10, 11, 12, 13, 27, 39)): # ASCII non-printable chars (reduced to those that would actually be used in a string) + single quote (used to denote strings and thus must not appear inside strings)
+					if (value in (0, 7, 8, 9, 10, 11, 12, 13, 27, 34)):  # ASCII non-printable chars (reduced to those that would actually be used in a string) + double quote (used to denote strings and thus must not appear inside strings)
+						str_parts.append(value)
+					elif (value >= 32 and value <= 126):	# ASCII printable chars
 						if (len(str_parts) == 0 or isinstance(str_parts[-1], int)):
 							str_parts.append("")			# add new string part
 						str_parts[-1] += chr(value)			# add to last string part
-					#elif (value in (0, 7, 8, 9, 10, 13)):	# ASCII non-printable range (reduced to those that one would expect to be actually used in a string)
-					elif (value in (0, 7, 8, 9, 10, 11, 12, 13, 27)):	# ASCII non-printable range (reduced to those that one would expect to be actually used in a string)
-						str_parts.append(value)
 					else:									# everything else
 						if (need_null == True):				# null-termination required -> false positive, not a string; null-termination not required -> string
 							is_string = False
@@ -400,7 +402,8 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 				if (need_null == True and len(values) > 0 and values[-1] != 0): # null-terminated?
 					is_string = False
 				if (is_string == True):
-					str_str = str.join(",", [ "0x%02x" % part if isinstance(part, int) else "\"%s\"" % part for part in str_parts ])
+					#str_str = str.join(",", [ "0x%02x" % part if isinstance(part, int) else "'%s'" % part for part in str_parts ]) # denote string using single quotes
+					str_str = str.join(",", [ "0x%02x" % part if isinstance(part, int) else "\"%s\"" % part for part in str_parts ]) # denote string using double quotes
 					hex_str = str.join(" ", [ "%02x" % value for value in values ])
 					#hint_str = hint_template % (line_ofs, line_ofs + len(values))
 					hint_str = hint_template % (line_ofs, len(values))
@@ -483,13 +486,13 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 			length += 1
 			offset += 1
 
-	# TODO: not sure if this works correctly for FWORDS as those are different
-	#       (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector); probably
-	#       not, as it might be that the first 4 bytes need to be reversed
-	#       separately from the last 2 bytes (currently all 6 bytes are reversed
-	#       in order of appearance)
-	# NOTE: words + qwords are very common; TBYTEs can be observed in FATAL.EXE;
+	# NOTE: WORDS + QWORDS are very common; TBYTEs can be observed in FATAL.EXE;
 	#       we have yet to see FWORDs in real code
+	# TODO: not sure if this works correctly for FWORDS as those are quite dif-
+	#       ferent (6 bytes, 4 bytes 32-bit offset + 2 bytes 16-bit selector);
+	#       probably not as the first 4 bytes might need to be reversed sepa-
+	#       rately from the last 2 bytes (currently, all 6 bytes are reversed
+	#       in order of appearance)
 	elif (mode in ("words", "dwords", "fwords", "qwords", "tbytes")):	# words, dwords, fwords, qwords, tbytes
 		mode_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt" }
 		mode_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
@@ -975,7 +978,7 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 						continue
 					line = "%-100s; aliases: %s" % (line, str.join(", ", [ item["name"] for item in matching_globals]))
 
-			# Check if asm command is call or jump -> replace target with global label
+			# Check if asm command is call, jump or loop -> replace target with global label
 			# NOTE: this intentionally only matches single constant address, e.g. 'je 0x39bd',
 			#       but not 'call DWORD PTR ds:0x24850' (as the latter format is usually
 			#       accompanied by a fixup)
@@ -987,7 +990,7 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 			#       branches'); not pretty, but should be fine for now as replace here simply
 			#       does nothing since offset has already been replaced with fixup target label
 			#       at this point (see 'line.replace()' in code block above)
-			if (asm["command"] == "call" or asm["command"].startswith("j")):
+			if (asm["command"] == "call" or asm["command"].startswith("j") or asm["command"].startswith("loop")):
 				match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
 				if (match != None):
 					ofs_str = match.group(0) # entire string including '0x'
@@ -995,6 +998,16 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 					if ((object["num"], ofs_val) in globals_map):
 						matching_globals = globals_map[((object["num"], ofs_val))]
 						if (len(matching_globals) > 0):
+							# TESTING: find long jumps and prefix branch target with 'NEAR PTR', to
+							#          fix jumps being shorter when recompiling disassembly (which
+							#          results in offset shifts and potentially messes up alignment;
+							#          also complicates comparisons between original code and re-
+							#          compiled code)
+							#if (asm["command"].startswith("j") and len(asm["data"]) >= 5):
+							#	logging.warning("Prefixing near jump with 'NEAR PTR': %s", line)
+							#	line = line.replace(ofs_str, "NEAR PTR " + matching_globals[0]["name"]) # use first global if multiple available
+							#else:
+							#	line = line.replace(ofs_str, matching_globals[0]["name"]) # use first global if multiple available
 							line = line.replace(ofs_str, matching_globals[0]["name"]) # use first global if multiple available
 						else:
 							logging.warning("Empty list in global map for (object %d, offset 0x%x): %s" % (object["num"], ofs_val, line))
@@ -1146,7 +1159,8 @@ def preprocess_modules(wdump):
 
 # Preprocess globals:
 # - accumulate globals over subsections
-# - add source -> all globals at this point come from debug info
+# - rename duplicate globals to avoid name clashing
+# - add source (all globals at this point come from debug info)
 # - sort globals by parent object (segment), offset
 def preprocess_globals(wdump):
 	logging.debug("Preprocessing globals...")
@@ -1156,8 +1170,21 @@ def preprocess_globals(wdump):
 		return []
 
 	globals_ = []
+	name_map = {}
 	for subsec in wdump["global info"]["data"].values():
 		for global_ in subsec["data"]:
+			if ("name" in global_):
+				if (global_["name"] in name_map): # check for and resolve name clashing
+					# postfix module number if available (might already revolve clash)
+					base_name = new_name = "%s_mod_%d" % (global_["name"], global_["module"]) if ("module" in global_) else global_["name"]
+					# postfix increasing index number starting with 2 (only if still clashing)
+					i = 1
+					while (new_name in name_map):
+						i += 1
+						new_name = "%s_%d" % (base_name, i)
+					logging.warn("Renaming global to prevent name clashing: '%s' -> '%s'" % (global_["name"], new_name))
+					global_["name"] = new_name
+				name_map[global_["name"]] = global_
 			#globals_.append(OrderedDict([(key, global_[key]) for key in global_.keys()]))
 			globals_.append(OrderedDict([(key if (key != "segment") else "object", global_[key]) for key in global_.keys()] + [("source", "debug info")]))
 
@@ -1345,7 +1372,7 @@ def get_fixups_for_offset(fixup_map, obj_num, start_ofs, end_ofs, filter_dupes):
 	return fixups
 
 
-# ----------------- miscellaneous --------------------
+# ----------------- execution flow / branch tracing --------------------
 
 
 # Trace execution flow to identify code/data blocks
@@ -1353,7 +1380,10 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 
 	#
 	# TODO:
-	# - detect/decode branch via jump table:
+	# - Combine this with / make use of data maps; data maps are already designed to fully describe and
+	#   encompass object data; information regarding boundaries (globals, modules, etc.) is useful to
+	#   solve problems like finding the ends of jump tables
+	# - [WIP] Detect/decode branch via jump table:
 	#   2f8e9:       2e ff 24 85 54 f6 02 00         jmp    DWORD PTR cs:[eax*4+0x2f654]
 	#   -> we can be fairly certain that there is a jump table at 0x2f654
 	#   -> we know that jump tables contain branch locations (branch target object/offset can be obtained
@@ -1364,11 +1394,12 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 	#      _SS_serve_reference_1 and even for dma_asm_variable_1 in object 2; but problematic for tables
 	#      with 'holes', e.g. ailssa_asm_reference_1)
 	#   -> a jump table is a DATA block, thus store it as such in the block list
-	# - when done, generate and print list of 'holes' in object data space (i.e. unidentified/unvisited
-	#   portions of an object's data)
+	# - When done, generate and print list of 'holes' in object data space (i.e. unidentified/unvisited
+	#   portions of an object's data); analyzing this output could yield further ideas on how to improve
+	#   tracing to reduce the amount of unidentified/unvisited regions
 	#
 	# DONE:
-	# - detect/decode branch via reference:
+	# - Detect/decode branch via reference:
 	#   2cade:       ff 15 b4 46 04 00       call   DWORD PTR ds:0x446b4
 	#   -> if there is a fixup for value 0x446b4, we know that 0x446b4 is a reference
 	#   -> if there is also a fixup for the value stored at 0x446b4, we known the branch target object/offset
@@ -1376,13 +1407,13 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 	#   -> this boils down to dereferencing two pointer using fixup data
 	#   -> the location of the reference (here: 0x446b4) is a DATA block, thus store it as such in the
 	#    block list
-	# - use fixup data to set bt_obj correctly (currently hard-coded, which won't work for MK2's code
+	# - Use fixup data to set bt_obj correctly (currently hard-coded, which won't work for MK2's code
 	#   in data objects; requires offset-fixup-map)
-	# - create an object map so we don't need to use next(); also helpful to store per-object results
+	# - Create an object map so we don't need to use next(); also helpful to store per-object results
 	#   when done
-	# - store unrecognized call/jump in a separate list for better analysis / debugging instead of
+	# - Store unrecognized call/jump in a separate list for better analysis / debugging instead of
 	#   only printing mid-analysis
-	# - change from code blocks to just blocks; add key 'type' to each block; this way, we are able
+	# - Change from code blocks to just blocks; add key 'type' to each block; this way, we are able
 	#   to store any kind of block (see jump tables below)
 	#
 
@@ -1480,6 +1511,11 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 			# -> check if fixup applies / takes precedence
 			# -> check if branch target is new/unknown block
 			# -> add new item to block list + known blocks map
+			# TODO:
+			# Would it make sense to include 'loop' commands? Probably not, as those
+			# usually only jump to / loop over code that PRECEDES the 'loop' command
+			# (and is thus already discovered); however, it might make sense as loop
+			# targets are certainly code (and should be marked as such)
 			if (asm["command"] == "call" or asm["command"].startswith("j")):		# call + jump commands
 
 				# Direct branch (i.e. branch via direct/constant address/offset)
@@ -1545,11 +1581,11 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 						blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
 					continue
 
-				# [TODO WIP]: Branch table
+				# Branch table branches
 				# 2f719:      2e ff 24 85 44 f6 02 00         jmp    DWORD PTR cs:[eax*4+0x2f644]
-				# -> jump table at 0x2f644 containing references
-				# -> add new blocks for all references in table
-				# -> confirm table contents actually are (usable) references by checking for associated fixups
+				# -> jump table at 0x2f644, containing list of references (i.e. branch targets)
+				# -> add new blocks for all branch targets in table
+				# -> confirm table contents actually are (usable) branch references by checking for associated fixups
 				#
 				# TODO:
 				# - store branch table as data block in block list/map
@@ -1557,22 +1593,22 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 				#   either use object end or start of next block as end; CAUTION: has to be done for object where branch
 				#   table is located, got nothing to do with where current block is located; BUT also needs to take module
 				#   boundaries into account (see below)
-				# - grabs too many entries for consecutive tables (e.g. MK1.EXE, object 2, TupleTable_variable_1 + runlen)
+				# - grabs too many entries for consecutive tables (e.g. MK1.EXE, object 2, TupleTable_variable_1 + runlen);
 				#   does not seem to be a problem for MK1.EXE, but could be problematic for other table constellations
-				#   -> YES, problematic e.g. MK2.EXE, object 2, dma_mk2_variable_1 @0xde0; branch table ends at module
+				#   -> YES, problematic e.g. for MK2.EXE, object 2, dma_mk2_variable_1 @0xde0; branch table ends at module
 				#      boundary, but current logic grabs first entry from P1_POWERBAR_NAMES (which is NOT a branch target,
-				#      but a reference to graphics data)
+				#      but instead a reference to graphics data)
 				# - does currently not work for tables with 'holes' (and probably never will)
-				# - currently, neither offset in branch table reference line nor actual branch table contents are used,
+				# - currently, neither offset in branch table reference line nor actual branch table contents are checked,
 				#   but only fixups associated with them; not a problem per se as fixups are what we're looking for, but
 				#   should we at least check for and report differences?
-				# - code needs to be checked and verified
+				# - code needs to be thoroughly checked and verified
 				match = re.match("^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?\[.+0x[0-9a-fA-F]+\]$", asm["arguments"].strip())
 				if (match):
 					logging.debug("  Possible branch table reference: %s" % line)	# check if there is a fixup associated with the offset that points to the table
 					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
 					if (len(fixups) == 0):
-						logging.warning("  No fixup for branch table reference")	# not an error (e.g. MK1.EXE, object 1, 0x39431 -> 0x11c does not reference branch table)
+						logging.warning("  No fixup for branch table reference")	# not an error (e.g. MK1.EXE, object 1, 0x39431 -> 0x11c does not reference a branch table)
 						continue
 					if (len(fixups) > 1):
 						logging.error("  Multiple fixups for branch table reference")
@@ -1612,13 +1648,13 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 							bt_obj = fixup["target object"]							# located table entry that is usable branch target
 							bt_ofs = fixup["target offset"]							# TODO: should we check if fixup target actually matches table entry contents? table entries could be stubs, so fixup would take precedence for mismatches either way
 
-							bt_list[-1]["entries"].append(OrderedDict([("object", bt_obj), ("offset", bt_ofs)])) # store all table entries
+							bt_list[-1]["entries"].append(OrderedDict([("object", bt_obj), ("offset", bt_ofs)])) # add table entry to table (regardless of state)
 
 							if (not (bt_obj, bt_ofs) in blk_map):					# skip known branches (block already created)
 								logging.debug("  New block (branch table entry): object: %d, start: 0x%x" % (bt_obj, bt_ofs))
 								blk_list.append(OrderedDict([("object", bt_obj), ("start", bt_ofs), ("end", None), ("length", None), ("type", "code"), ("disassembly", [])]))
 								blk_map[(bt_obj, bt_ofs)] = blk_list[-1]
-								#bt_list[-1]["entries"].append(OrderedDict([("object", bt_obj), ("offset", bt_ofs)])) # store only unique/new table entries
+								#bt_list[-1]["entries"].append(OrderedDict([("object", bt_obj), ("offset", bt_ofs)])) # add table entry to table (only unique/new)
 
 						# Advance entry offset to next (assumed) branch table entry
 						entry_ofs += 4
@@ -1661,7 +1697,7 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 	for item in ub_list:
 		logging.debug("object: %d, line: %s" % (item["object"], item["line"]))
 	logging.debug("")
-	logging.debug("Identified %d unique blocks." % len(blk_list)) # TODO: print number of code blocks, data blocks and total
+	logging.debug("Identified %d unique blocks." % len(blk_list)) # TODO: print number of code blocks, data blocks and total blocks
 
 	# Return results
 	return (blk_list, blk_map)
@@ -1936,19 +1972,21 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 	analyze_fixups_add_globals(disasm["objects"], disasm["globals"], disasm["fixups"])
 
 
-	# TESTING: Execution flow tracing to identify code blocks (aka 'branch tracing'/'tracing disassembler')
-	if (False):
-		logging.info("")
-		logging.info("Tracing execution flow to identify code blocks:")
-		ep_obj = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "object # for initial eip")
-		ep_ofs = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "initial eip")
-		if (ep_obj != None and ep_ofs != None):
-			(blk_list, blk_map) = trace_execution_flow(wdump, disasm["objects"], ep_obj, ep_ofs, fusrc_map, objdump_exec)
-			write_file(outfile_template % "disasm_block_list.txt", format_pprint(blk_list))
-			write_file(outfile_template % "disasm_block_map.txt", format_pprint(blk_map))
-		else:
-			logging.warning("LE header does not contain entries for entry object/offset, skipping trace")
-		return # this is completely separate for now (not yet integrated with the rest that follows)
+	# TESTING:
+	# Execution flow tracing to identify code blocks (aka 'branch tracing'/'tracing
+	# disassembler'); This is completely separate for now (not yet integrated with
+	# anything that follows)
+	#logging.info("")
+	#logging.info("Tracing execution flow to identify code blocks:")
+	#ep_obj = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "object # for initial eip")
+	#ep_ofs = dict_path_value(wdump, "linear exe header (os/2 v2.x) - le", "data", "initial eip")
+	#if (ep_obj != None and ep_ofs != None):
+	#	(blk_list, blk_map) = trace_execution_flow(wdump, disasm["objects"], ep_obj, ep_ofs, fusrc_map, objdump_exec)
+	#	write_file(outfile_template % "disasm_block_list.txt", format_pprint(blk_list))
+	#	write_file(outfile_template % "disasm_block_map.txt", format_pprint(blk_map))
+	#else:
+	#	logging.warning("LE header does not contain entries for entry object/offset, skipping trace")
+	#return # leave disassemble_objects()
 
 
 	# Build data maps for code objects
@@ -2257,7 +2295,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 			if (asm == None):
 				logging.warning("Invalid assembly line: line %d: '%s'" % (i+1, line))
 				continue
-			if (asm["command"] != "call" and not asm["command"].startswith("j")):	# only call + jump commands
+			if (asm["command"] != "call" and not asm["command"].startswith("j") and not asm["command"].startswith("loop")):		# only call, jump and loop commands
 				continue
 			match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())		# only those with direct/constant address/offset
 			if (match == None):

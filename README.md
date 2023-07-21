@@ -16,23 +16,25 @@ The idea for this tool emerged when I discovered that one of my all-time favorit
 
 Thus, I began writing my own tool. What originally started out as *mkdecomptool* specifically for *Mortal Kombat* is now the general-purpose *Watcom Disassembly Tool (wcdatool)*.
 
+Note that while wcdatool performs the tasks it is designed for quite well, it is not intended to compete with or replace high-end tools like *IDA Pro* or *Ghidra*.
+
 ## Current state and future development
 
-Wcdatool is *work in progress*. You can tell from looking at the source code - there's tons of TODO, TESTING, FIXME, etc. flying around. Also, it is relatively slow as performance has not been the main focus.
+Wcdatool is *work in progress*. You can tell from looking at the source code - there's tons of TODO, TESTING, FIXME, etc. flying around. Also, it is relatively slow as performance has not been the main focus ([Cython](https://cython.org/) might be utilized in the future to increase performance).
 
-Nevertheless, it works quite well in its current state - you'll get a well-readable, reasonably structured disassembly output (*objdump* format). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far. Please note that wcdatool works best when used on executables that contain debug symbols. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for further testing and development, please let me know.
+Nevertheless, it works quite well in its current state - you'll get a well-readable, reasonably structured disassembly output (*objdump* format, *Intel* syntax). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far. Please note that wcdatool works best when used on executables that contain debug symbols. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for further testing and development, please let me know.
 
 The *next major goal* is to cleanly rewrite the disassembler module and transition from *static code disassembly* to *execution flow tracing* (e.g. *Mortal Kombat 2* executable contains code within its data object, which is neither discovered nor processed with the current approach).
 
 ## Output sample
 
-Output sample for *Fatal Racing* (`FATAL.EXE`) - the left side shows the reconstructed source files, the right side shows a portion of disassembly:
+Output sample for *Fatal Racing* (`FATAL.EXE`) - the left side shows the reconstructed source files, the right side shows a portion of formatted disassembly:
 
 ![screenshot](https://github.com/fonic/wcdatool/raw/master/SCREENSHOT.png)
 
 ## How to use it
 
-There are multiple ways to use *wcdatool*, but the following instructions should get you started. These instructions assume that you are using *Linux*. For *Windows* users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:
+There are multiple ways to use *wcdatool*, but the following instructions should get you started. Don't let the amount of information provided below discourage you, the tool is easier to use than it might seem. The instructions assume that you are using *Linux*. For *Windows* users, the easiest way to go is to use *Windows Subsystem for Linux (WSL)*:
 
 1. Requirements:
 
@@ -80,7 +82,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
    # wcdatool/Scripts/process-single.executable.sh <name-of-executable>
    ```
 
-   -or- Run *wcdatool* manually (use `--help` to display detailed usage information):
+   -or- Run *wcdatool* manually (use `--help` to display detailed usage information or [see below](#wcdatools-usage-information)):
    ```
    # python wcdatool/Wcdatool/wcdatool.py -od wcdatool/Output -wao wcdatool/Hints/<name-of-executable>.txt wcdatool/Executables/<name-of-executable>
    ```
@@ -102,6 +104,42 @@ There are multiple ways to use *wcdatool*, but the following instructions should
    - *The ultimate goal here is to eliminate all (or at least most) warnings issued by wcdatool*. Each warning points out a region of the disassembly that does currently seem flawed and therefore requires further attention/investigation. Note that there is a *cascading effect* at work (e.g. a region of data that is falsely intepreted as code may produce bogus branches, leading to further issues), thus warnings should be tackled one (or few) at a time from first to last with *wcdatool* re-runs in between
 
    **NOTE:** this is by far the most time-consuming part, but *crucial* to achieve good and clean results (!)
+
+## Wcdatool's usage information
+
+```
+Usage: wcdatool.py [-wde|--wdump-exec PATH] [-ode|--objdump-exec PATH]
+                   [-wdo|--wdump-output PATH] [-wao|--wdump-addout PATH]
+                   [-od|--output-dir PATH] [-cm|--color-mode VALUE]
+                   [-id|--interactive-debugger] [-is|--interactive-shell]
+                   [-h|--help] FILE
+
+Tool to aid disassembling DOS applications created with the Watcom toolchain.
+
+Positionals:
+  FILE                            Path to input executable to disassemble
+                                  (.exe file)
+
+Options:
+  -wde PATH, --wdump-exec PATH    Path to wdump executable (default: 'wdump')
+  -ode PATH, --objdump-exec PATH  Path to objdump executable (default:
+                                  'objdump')
+  -wdo PATH, --wdump-output PATH  Path to file containing pre-generated wdump
+                                  output to read/parse instead of running
+                                  wdump
+  -wao PATH, --wdump-addout PATH  Path to file containing additional wdump
+                                  output to read/parse (mainly used for object
+                                  hints)
+  -od PATH, --output-dir PATH     Path to output directory for storing
+                                  generated content (default: '.')
+  -cm VALUE, --color-mode VALUE   Enable color mode (choices: 'auto', 'true',
+                                  'false') (default: 'auto')
+  -id, --interactive-debugger     Drop to interactive debugger before exiting
+                                  to allow inspecting internal data structures
+  -is, --interactive-shell        Drop to interactive shell before exiting to
+                                  allow inspecting internal data structures
+  -h, --help                      Display usage information (this message)
+```
 
 ## How to contact me
 

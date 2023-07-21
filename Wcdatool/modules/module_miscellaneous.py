@@ -7,7 +7,7 @@
 #  Module Miscellaneous                                                   -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 03/30/22                                              -
+#  Date: 06/20/19 - 07/19/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@ def write_file(path, content, *, strings_separator=os.linesep, bytes_separator=b
 # Return value: True (if dict path exists), False (if dict path does not exist)
 def dict_path_exists(dict_, *keys):
 	if (not isinstance(dict_, dict)):
-		raise TypeError("dict must be type dict, not %s" % type(sep).__name__)
+		raise TypeError("dict must be type dict, not %s" % type(dict_).__name__)
 	if (len(keys) == 0):
 		raise IndexError("no key(s) specified")
 
@@ -96,7 +96,7 @@ def dict_path_exists(dict_, *keys):
 # Return value: value (if dict path exists), None (if dict path does not exist)
 def dict_path_value(dict_, *keys):
 	if (not isinstance(dict_, dict)):
-		raise TypeError("dict must be type dict, not %s" % type(sep).__name__)
+		raise TypeError("dict must be type dict, not %s" % type(dict_).__name__)
 	if (len(keys) == 0):
 		raise IndexError("no key(s) specified")
 
