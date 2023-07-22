@@ -38,7 +38,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
 1. Requirements:
 
-   Wcdatool: *Python >= 3.6.0*, *wdump* (part of [Open Watcom v2](https://open-watcom.github.io/)), *objdump* (part of [binutils](https://sourceware.org/binutils/))<br/>
+   Wcdatool: *Python (>=3.6.0)*, *wdump* (part of [Open Watcom v2](https://open-watcom.github.io/)), *objdump* (part of [binutils](https://sourceware.org/binutils/))<br/>
    (both *wdump* and *objdump* need to be accessible via `PATH`)
 
    Open Watcom v2: *gcc* -or- *clang* (for 64-bit builds), *DOSEMU* -or- *DOSBox* (for *wgml* utility)<br/>
@@ -82,7 +82,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
    # wcdatool/Scripts/process-single.executable.sh <name-of-executable>
    ```
 
-   -or- Run *wcdatool* manually (use `--help` to display detailed usage information or [see below](#wcdatools-usage-information)):
+   -or- Run *wcdatool* manually (use `--help` to display detailed usage information or [see below](#wcdatool-usage-information)):
    ```
    # python wcdatool/Wcdatool/wcdatool.py -od wcdatool/Output -wao wcdatool/Hints/<name-of-executable>.txt wcdatool/Executables/<name-of-executable>
    ```
@@ -101,11 +101,11 @@ There are multiple ways to use *wcdatool*, but the following instructions should
    - Identify and add hints for regions in code objects that are actually data (look for `; misplaced item` comments, `(bad)` assembly instructions and labels with `; access size` comments)
    - Identify and add hints for regions in data objects that are actually code (look for `call`/`jmp` instructions in code objects with fixup targets pointing to data objects)
    - Check section `Possible object hints` of *wcdatool*'s output/log for suggestions (not guaranteed to be correct, but likely a good starting point)
-   - *The ultimate goal here is to eliminate all (or at least most) warnings issued by wcdatool*. Each warning points out a region of the disassembly that does currently seem flawed and therefore requires further attention/investigation. Note that there is a *cascading effect* at work (e.g. a region of data that is falsely intepreted as code may produce bogus branches, leading to further issues), thus warnings should be tackled one (or few) at a time from first to last with *wcdatool* re-runs in between
+   - *The ultimate goal here is to eliminate all (or at least most) warnings issued by wcdatool*. Each warning points out a region of the disassembly that does currently seem flawed and therefore requires further attention/investigation. Note that there is a *cascading effect* at work (e.g. a region of data that is falsely intepreted as code may produce bogus branches, leading to further warnings), thus warnings should be tackled one (or few) at a time from first to last with *wcdatool* re-runs in between
 
    **NOTE:** this is by far the most time-consuming part, but *crucial* to achieve good and clean results (!)
 
-## Wcdatool's usage information
+## Wcdatool usage information
 
 ```
 Usage: wcdatool.py [-wde|--wdump-exec PATH] [-ode|--objdump-exec PATH]
