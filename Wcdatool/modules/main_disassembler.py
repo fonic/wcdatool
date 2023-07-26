@@ -7,7 +7,7 @@
 #  Main Part Disassembler                                                 -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 05/19/23                                              -
+#  Date: 06/20/19 - 07/25/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -480,11 +480,16 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 		disassembly.append(asm_template % (line_ofs, hex_str, "db", str_str))
 		length += len(values)
 
-	elif (mode == "bytes"):									# bytes
-		while (offset < data_len and offset < end_ofs):
-			disassembly.append(generate_define_byte(offset, data[offset], comment=True))
-			length += 1
-			offset += 1
+	# NOTE: integrated this into the case below -> makes sense to have all these
+	#       data types grouped and also facilitates adding support for run-length
+	#       encoding (RLE) for all data types; only need to make sure bytes are
+	#       always generated using generate_define_byte to add trailing comments
+	#       (i.e. '; dec: ..., chr: '...''
+	#elif (mode == "bytes"):									# bytes
+	#	while (offset < data_len and offset < end_ofs):
+	#		disassembly.append(generate_define_byte(offset, data[offset], comment=True))
+	#		length += 1
+	#		offset += 1
 
 	# NOTE: WORDS + QWORDS are very common; TBYTEs can be observed in FATAL.EXE;
 	#       we have yet to see FWORDs in real code
@@ -493,23 +498,118 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 	#       probably not as the first 4 bytes might need to be reversed sepa-
 	#       rately from the last 2 bytes (currently, all 6 bytes are reversed
 	#       in order of appearance)
-	elif (mode in ("words", "dwords", "fwords", "qwords", "tbytes")):	# words, dwords, fwords, qwords, tbytes
-		mode_defines = { "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt" }
-		mode_sizes = { "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
+	# TODO: add support for run-length encoding (RLE) for consecutive zeros; we
+	#       could use RLE for all kinds of consecutive data, but zeros are most
+	#       prominent in data objects, so let's start with that, check results
+	#       and then decide whether it's a good idea to go further; for syntax,
+	#       see 'https://stackoverflow.com/a/44069159/1976617'; for testing if
+	#       data block is all zeros, use:
+	#       if (not any(data[offset:min(data_len,end_ofs)])):
+	#           ...
+	#       (based on: https://www.reddit.com/r/Python/comments/6f0ea4/fastest_
+	#       way_to_determine_if_a_1k_bytearray/)
+	#       NOTE that RLE needs to be added to case 'if (mode == "auto-strings")'
+	#       above as well as that also generates 'db' lines for non-string data!
+	#       -> tested, but then decided against this, instead implemented string-
+	#          based deduplication of formatted disassembly lines in disassemble_
+	#          objects()
+
+	# Original, with type 'bytes' from above included
+	#elif (mode in ("bytes", "words", "dwords", "fwords", "qwords", "tbytes")):	# bytes, words, dwords, fwords, qwords, tbytes
+	#	mode_defines = { "bytes": "db", "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt" }
+	#	mode_sizes = { "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
+	#	mode_define = mode_defines[mode]
+	#	mode_size = mode_sizes[mode]
+	#	while (offset < data_len and offset < end_ofs):
+	#		if (mode != "bytes" and offset <= data_len - mode_size and offset <= end_ofs - mode_size):
+	#			values = list(data[offset:offset+mode_size])
+	#			hex_str = str.join(" ", [ "%02x" % value for value in values ])
+	#			val_str = "0x" + str.join("", [ "%02x" % value for value in reversed(values) ])
+	#			disassembly.append(asm_template % (offset, hex_str, mode_define, val_str))
+	#			length += mode_size
+	#			offset += mode_size
+	#		else:
+	#			disassembly.append(generate_define_byte(offset, data[offset], comment=True))
+	#			length += 1
+	#			offset += 1
+
+	# Same as above, but eliminated if-else for remainder handling
+	elif (mode in ("bytes", "words", "dwords", "fwords", "qwords", "tbytes")):	# bytes, words, dwords, fwords, qwords, tbytes
+		mode_defines = { "bytes": "db", "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt" }
+		mode_sizes = { "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
 		mode_define = mode_defines[mode]
 		mode_size = mode_sizes[mode]
 		while (offset < data_len and offset < end_ofs):
-			if (offset < data_len - mode_size and offset <= end_ofs - mode_size):
-				values = list(data[offset:offset+mode_size])
+			if (offset > data_len - mode_size or offset > end_ofs - mode_size):	# decode remainder as bytes
+				mode = "bytes"
+				mode_define = mode_defines[mode]
+				mode_size = mode_sizes[mode]
+			values = list(data[offset:offset+mode_size])
+			if (mode == "bytes"):
+				disassembly.append(generate_define_byte(offset, data[offset], comment=True))
+			else:
 				hex_str = str.join(" ", [ "%02x" % value for value in values ])
 				val_str = "0x" + str.join("", [ "%02x" % value for value in reversed(values) ])
 				disassembly.append(asm_template % (offset, hex_str, mode_define, val_str))
-				length += mode_size
-				offset += mode_size
-			else:
-				disassembly.append(generate_define_byte(offset, data[offset], comment=True))
-				length += 1
-				offset += 1
+			length += mode_size
+			offset += mode_size
+
+	# Same as above, with combining of consecutive duplicates (deduplication)
+	# NOTE: works, but way more complicated than it should be; also, RLE
+	#       integration HERE is only part of the solution, case 'auto-strings'
+	#       above needs it as well -> seems to be a dead end, probably better
+	#       to implement this as a final pass that runs on entire disassembly
+	#       (would need to be string-based then)
+	#elif (mode in ("bytes", "words", "dwords", "fwords", "qwords", "tbytes")):	# bytes, words, dwords, fwords, qwords, tbytes
+	#	mode_defines = { "bytes": "db", "words": "dw", "dwords": "dd", "fwords": "df", "qwords": "dq", "tbytes": "dt" }
+	#	mode_sizes = { "bytes": 1, "words": 2, "dwords": 4, "fwords": 6, "qwords": 8, "tbytes": 10 }
+	#	mode_define = mode_defines[mode]
+	#	mode_size = mode_sizes[mode]
+	#	dup_offset = 0
+	#	dup_values = []
+	#	dup_count = 0
+	#	while (offset < data_len and offset < end_ofs):
+	#		if (offset > data_len - mode_size or offset > end_ofs - mode_size):
+	#			mode = "bytes"
+	#			mode_define = mode_defines[mode]
+	#			mode_size = mode_sizes[mode]
+	#		values = list(data[offset:offset+mode_size])
+	#		if (dup_count > 0):
+	#			if (values == dup_values):
+	#				dup_count += 1
+	#			else:
+	#				#logging.debug("End of duplicates: dup_offset: 0x%x, dup_value: 0x%x, dup_count: %d" % (dup_offset, str(dup_values), dup_count))
+	#				#logging.debug("End of duplicates: dup_offset: 0x%x, dup_values: %s, dup_count: %d" % (dup_offset, "0x" + str.join("", [ "%02x" % value for value in reversed(dup_values) ]), dup_count))
+	#				hex_str = str.join(" ", [ "%02x" % value for value in (dup_values * dup_count) ])
+	#				val_str = "0x" + str.join("", [ "%02x" % value for value in reversed(dup_values) ])
+	#				if (dup_count > 1):
+	#					disassembly.append(asm_template % (dup_offset, hex_str, mode_define, "%d dup(%s)" % (dup_count, val_str)))
+	#				else:
+	#					if (mode == "bytes"):
+	#						disassembly.append(generate_define_byte(dup_offset, data[dup_offset], comment=True))
+	#					else:
+	#						disassembly.append(asm_template % (dup_offset, hex_str, mode_define, val_str))
+	#				dup_offset = offset
+	#				dup_values = values
+	#				dup_count = 1
+	#		else:
+	#			dup_offset = offset
+	#			dup_values = values
+	#			dup_count = 1
+	#		length += mode_size
+	#		offset += mode_size
+	#	if (dup_count > 0):
+	#		#logging.debug("End of duplicates: dup_offset: 0x%x, dup_values: %s, dup_count: %d" % (dup_offset, str(dup_values), dup_count))
+	#		#logging.debug("End of duplicates: dup_offset: 0x%x, dup_values: %s, dup_count: %d" % (dup_offset, "0x" + str.join("", [ "%02x" % value for value in reversed(dup_values) ]), dup_count))
+	#		hex_str = str.join(" ", [ "%02x" % value for value in (dup_values * dup_count) ])
+	#		val_str = "0x" + str.join("", [ "%02x" % value for value in reversed(dup_values) ])
+	#		if (dup_count > 1):
+	#			disassembly.append(asm_template % (dup_offset, hex_str, mode_define, "%d dup(%s)" % (dup_count, val_str)))
+	#		else:
+	#			if (mode == "bytes"):
+	#				disassembly.append(generate_define_byte(dup_offset, data[dup_offset], comment=True))
+	#			else:
+	#				disassembly.append(asm_template % (dup_offset, hex_str, mode_define, val_str))
 
 	# Return results
 	return (offset, length, disassembly)
@@ -2910,7 +3010,103 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		generate_formatted_disassembly(object, disasm["globals"], fixrel)
 
 
-	# TESTING: Generate hints for assumed data portions of code objects
+	# Deduplicate formatted disassembly
+	# NOTE: We do this here (and string-based rather than data-based) as it
+	#       turned out to be the much easier approach:
+	#
+	#       First try was data-based in generate_data_disassembly()); however,
+	#       data-based deduplication caused issues with labels being misplaced
+	#       afterwards (due to data being label-agnostic; would have required
+	#       additional object hints to fix), also would have required extending
+	#       code in several additional places (e.g. 'auto-strings' case)
+	#
+	#       String-based deduplication has many advantages, e.g. this deals
+	#       perfectly with lines where only comments differ (e.g. MK1, object
+	#       1, offsets 0x3084c + 0x30850 -> comments differ due to fixups and
+	#       thus lines are NOT deduplicated, which is exactly what we want in
+	#       this case); non-data lines (e.g. empty lines, comments, labels)
+	#       interrupt deduplication (e.g. MK1, object 2, offsets 0x4527c, 0x
+	#       45280 and 0x45284 -> same data, but NOT deduplicated due to non-
+	#       data lines interrupting in between)
+	logging.info("")
+	logging.info("Deduplicating formatted disassembly for all objects:")
+
+	def generate_dup_line(line, asm, count):
+		# If we got duplicates, generate 'dx <count> dup(<value>)' line; if not, simply
+		# copy stored/tracked line as-is (below if clause)
+		if (count > 1):
+			# NOTE: correct hex data is not actually important at this stage, but
+			#       still nice to have nonetheless (same as trailing comment)
+			hex_str = str.join(" ", [ "%02x" % value for value in (asm["data"] * count) ])
+			line = "%8x:\t%-20s \t%-6s %s" % (asm["offset"], hex_str, asm["command"], "%d dup(%s)" % (count, asm["arguments"]))
+			if (asm["comment"] != None and asm["comment"] != ""):
+				# Using this instead of '%-100s%s' to ensure spacing between command/arguments
+				# and comments for very long lines
+				line = "%-95s     %s" % (line, asm["comment"])
+		return line
+
+	#for object in []:		# may be used to disable deduplication for testing
+	for object in disasm["objects"]:
+		logging.debug("Deduplicating formatted disassembly of object %d..." % object["num"])
+		disassembly = []
+		dup_line = ""		# storage to track (potential) duplicates
+		dup_asm = OrderedDict()
+		dup_count = 0
+		#lines_saved = 0	# may be used to verify deduplication: len(deduplicated_disassembly) + lines_saved == len(original_disassembly)
+		for i in range(0, len(object["disasm formatted"])):
+			line = object["disasm formatted"][i]
+
+			# Empty lines, comment lines, label lines, label + comment(s) lines
+			# NOTE: labels can actually contain weird characters (e.g. '$', '?', '@', '.'
+			#       and braces in PACMANVR.EXE), so just regex for non-space and be done
+			#       with it
+			#if (not (line == "" or line.startswith(";") or re.match("^[a-zA-Z0-9_]+:(?:[ ]+;.+)?$", line))):
+			if (not (line == "" or line.startswith(";") or re.match("^[^ ]+:(?:[ ]+;.+)?$", line))):
+				asm = split_asm_line(line)
+				if (asm != None):
+					# We only want to track and deduplicate these kind of lines (i.e. data definitions)
+					if (asm["command"] in ("db", "dw", "dd", "df", "dq", "dt")):
+						# Currently tracking duplicates? If so, see below; If not, initialize
+						# duplicates tracking to current line and continue (below if clause)
+						if (dup_count > 0):
+							# Check if current line matches stored duplicates line; if it does, increase
+							# duplicates counter and continue; if it does not, dump duplicates, reset
+							# duplicates tracking to current line and continue (below if clause)
+							if (asm["data"] == dup_asm["data"] and asm["command"] == dup_asm["command"] and asm["arguments"] == dup_asm["arguments"] and asm["comment"] == dup_asm["comment"]): # everything except indent and offset must match for a line to be considered a duplicate of the previous line
+								dup_count += 1
+								#lines_saved += 1
+								continue
+							else:
+								disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+						dup_line = line
+						dup_asm = asm
+						dup_count = 1
+						continue
+				else:
+					# Should never happen (bug if it does)
+					logging.warning("Invalid assembly line: line %d: '%s'" % (i+1, line))
+
+			# Currently tracking duplicates? If so, dump duplicates, disable duplicates
+			# tracking (as current line is non-data line) and copy current disassembly
+			# line as-is
+			if (dup_count > 0):
+				disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+				dup_line = ""
+				dup_asm = OrderedDict()
+				dup_count = 0
+			disassembly.append(line)
+
+		# If duplicates were tracked until the end of the for loop, dump them now
+		if (dup_count > 0):
+			disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+
+		# Deduplication complete, log and store results
+		#logging.debug("Size reduction: %d lines, %d bytes -> %d lines, %d bytes (%d lines saved)" % (len(object["disasm formatted"]), len(str.join(os.linesep, object["disasm formatted"])), len(disassembly), len(str.join(os.linesep, disassembly)), lines_saved))
+		logging.debug("Size reduction: %d lines, %d bytes -> %d lines, %d bytes" % (len(object["disasm formatted"]), len(str.join(os.linesep, object["disasm formatted"])), len(disassembly), len(str.join(os.linesep, disassembly))))
+		object["disasm formatted"] = disassembly
+
+
+	# Generate hints for assumed data portions of code objects
 	#
 	# This stems from the observation that data regions in code objects almost
 	# always have access sizes assigned to them (which are discovered during
@@ -2978,7 +3174,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 	logging.debug ("Wrote %d files" % files_written)
 
 
-	# TESTING: Split formatted disassembly into separate files
+	# Split formatted disassembly into separate files
 	# NOTE: relies on module maps being generated by generate_formatted_disassembly()
 	# TODO: use os.path.join() to generate paths instead of using os.path.sep
 	logging.info("")

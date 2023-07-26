@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------------------
 #                                                                            -
 #  Created by Fonic <https://github.com/fonic>                               -
-#  Date: 03/16/23 - 05/21/23                                                 -
+#  Date: 03/16/23 - 07/23/23                                                 -
 #                                                                            -
 #  Refer to this issue for details:                                          -
 #  https://github.com/fonic/wcdatool/issues/11                               -
@@ -95,4 +95,4 @@ Object 2:
 # <nothing atm>
 
 Object 3:
-# <nothing atm>
+100) start = 000166d8H, end = 00017724H, type = data, mode = strings, comment = One very long string containing lines separated by '\r\n' (?)

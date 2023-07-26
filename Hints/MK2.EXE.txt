@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------------------
 #                                                                            -
 #  Created by Fonic <https://github.com/fonic>                               -
-#  Date: 06/20/19 - 04/06/22                                                 -
+#  Date: 06/20/19 - 07/25/23                                                 -
 #                                                                            -
 # ----------------------------------------------------------------------------
 
@@ -85,6 +85,7 @@ Object 1:
 211) offset = 0003F456H, length = 00000025H, type = data, mode = string, comment = Alphabet (ASCII characters 0-9 + a-z)
 212) offset = 0003F4F2H, length = 00000025H, type = data, mode = string, comment = Alphabet (ASCII characters 0-9 + a-z)
 213) offset = 0003FE03H, length = 00000030H, type = data, mode = dwords, comment = Jump table for signals/interrupts (see offset 0x3fe55)
+214) start = 000405EBH, end = 00041000H, type = data, mode = bytes, comment = Trailing emptiness
 
 Object 2:
 # Manually added
@@ -94,7 +95,8 @@ Object 2:
 203) offset = 00013AC8H, length = 00000023H, type = data, mode = bytes, comment = Sub-addressed string
 204) start = 0002D8AFH, end = 0002D9E7H, type = data, mode = strings, comment = List of strings for keyboard keys
 205) start = 0002F165H, end = 0002F1FBH, type = data, mode = bytes, comment = Default highscore table; structure: 3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score (?)
-206) start = 00033162H, end = 00034164H, type = data, mode = strings, comment = Noise table (string[8] + two dwords) (?)
+#206) start = 00033162H, end = 00034164H, type = data, mode = strings, comment = Noise table (string[8] + two dwords) (?)
+206) start = 00033162H, end = 00034162H, type = data, mode = struct:chars[8]:bytes[8], comment = Noise table (string[8] + bytes[8]) (?)
 207) start = 0003417CH, end = 0003419EH, type = data, mode = string, comment = String
 208) start = 0003419EH, end = 000341B6H, type = data, mode = string, comment = String
 209) start = 000341B6H, end = 000341C6H, type = data, mode = string, comment = String

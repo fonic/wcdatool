@@ -1,3 +1,9 @@
+## Changelog for v3.2 release
+
+- added algorithm to *deduplicate consecutive data lines* in formatted disassembly (*greatly* reduces disassembly size for data objects)
+- removed `TESTING` label for some code blocks that have proven themselves to be useful and stable
+- applied minor updates to object hints (`MK2.EXE`, `PACMANVR.EXE`)
+
 ## Changelog for v3.1 release
 
 - added algorithm to rename *duplicate globals* to avoid name clashing (unique labels are important/helpful when trying to recompile disassembly as one huge blob)
