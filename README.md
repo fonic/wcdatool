@@ -2,6 +2,12 @@
 
 Tool to aid disassembling DOS applications created with the *Watcom* toolchain.
 
+## Donations
+
+I'm striving to become a full-time developer of [Free and open-source software (FOSS)](https://en.wikipedia.org/wiki/Free_and_open-source_software). Donations help me achieve that goal and are highly appreciated.
+
+<a href="https://www.buymeacoffee.com/fonic"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/buymeacoffee-button.png" alt="Buy Me A Coffee" height="35"></a>&nbsp;&nbsp;&nbsp;<a href="https://paypal.me/fonicmaxxim"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/paypal-button.png" alt="Donate via PayPal" height="35"></a>
+
 ## Watcom Toolchain
 
 Many DOS applications of the 90s, especially games, were developed using the *Watcom* toolchain. Examples are *DOOM*, *Warcraft*, *Syndicate*, *Mortal Kombat*, just to name a few.
@@ -72,7 +78,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
    **NOTE:** hint files must be stored as `wcdatool/Hints/<name-of-executable>.txt` (case-sensitive, e.g. `wcdatool/Executables/MK1.EXE` -> `wcdatool/Hints/MK1.EXE.txt`) to be picked up automatically by the included scripts
 
-6. Let *wcdatool* process all provided executables (for the executables listed in step 4, this will take ~4min. and generate ~2GB worth of data):
+6. Let *wcdatool* process all provided executables (for the example executables listed in step 4, this will take ~3min. and generate ~1.5GB worth of data):
    ```
    # wcdatool/Scripts/process-all-executables.sh
    ```
@@ -100,7 +106,7 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 8. Refine the output by analyzing the disassembly, updating the object hints and re-running *wcdatool* (i.e. loop steps 5-8):
    - Identify and add hints for regions in code objects that are actually data (look for `; misplaced item` comments, `(bad)` assembly instructions and labels with `; access size` comments)
    - Identify and add hints for regions in data objects that are actually code (look for `call`/`jmp` instructions in code objects with fixup targets pointing to data objects)
-   - Check section `Possible object hints` of *wcdatool*'s output/log for suggestions (not guaranteed to be correct, but likely a good starting point)
+   - Check section `Possible object hints` of *wcdatool*'s console output / log file for suggestions (not guaranteed to be correct, but likely a good starting point)
    - *The ultimate goal here is to eliminate all (or at least most) warnings issued by wcdatool*. Each warning points out a region of the disassembly that does currently seem flawed and therefore requires further attention/investigation. Note that there is a *cascading effect* at work (e.g. a region of data that is falsely intepreted as code may produce bogus branches, leading to further warnings), thus warnings should be tackled one (or few) at a time from first to last with *wcdatool* re-runs in between
 
    **NOTE:** this is by far the most time-consuming part, but *crucial* to achieve good and clean results (!)
@@ -144,3 +150,7 @@ Options:
 ## How to contact me
 
 If you want to get in touch with me, give feedback, ask questions or simply need someone to talk to, please open an [Issue](https://github.com/fonic/wcdatool/issues) here on GitHub. Make sure to leave an email address if you prefer personal/private contact.
+
+##
+
+_Last updated: 08/09/23_
