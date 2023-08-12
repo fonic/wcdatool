@@ -6,7 +6,7 @@ Tool to aid disassembling DOS applications created with the *Watcom* toolchain.
 
 I'm striving to become a full-time developer of [Free and open-source software (FOSS)](https://en.wikipedia.org/wiki/Free_and_open-source_software). Donations help me achieve that goal and are highly appreciated.
 
-<a href="https://www.buymeacoffee.com/fonic"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/buymeacoffee-button.png" alt="Buy Me A Coffee" height="35"></a>&nbsp;&nbsp;&nbsp;<a href="https://paypal.me/fonicmaxxim"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/paypal-button.png" alt="Donate via PayPal" height="35"></a>
+<a href="https://www.buymeacoffee.com/fonic"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/buymeacoffee-button.png" alt="Buy Me A Coffee" height="35"></a>&nbsp;&nbsp;&nbsp;<a href="https://paypal.me/fonicmaxxim"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/paypal-button.png" alt="Donate via PayPal" height="35"></a>&nbsp;&nbsp;&nbsp;<a href="https://ko-fi.com/fonic"><img src="https://raw.githubusercontent.com/fonic/donate-buttons/main/kofi-button.png" alt="Donate via Ko-fi" height="35"></a>
 
 ## Watcom Toolchain
 
@@ -36,7 +36,7 @@ The *next major goal* is to cleanly rewrite the disassembler module and transiti
 
 Output sample for *Fatal Racing* (`FATAL.EXE`) - the left side shows the reconstructed source files, the right side shows a portion of formatted disassembly:
 
-![screenshot](https://github.com/fonic/wcdatool/raw/master/SCREENSHOT.png)
+![Screenshot](https://raw.githubusercontent.com/fonic/wcdatool/master/SCREENSHOT.png)
 
 ## How to use it
 
@@ -153,4 +153,4 @@ If you want to get in touch with me, give feedback, ask questions or simply need
 
 ##
 
-_Last updated: 08/09/23_
+_Last updated: 08/12/23_
