@@ -24,13 +24,13 @@ Thus, I began writing my own tool. What originally started out as *mkdecomptool*
 
 Note that while wcdatool performs the tasks it is designed for quite well, it is not intended to compete with or replace high-end tools like *IDA Pro* or *Ghidra*.
 
-## Current state and future development
+## Current state / future development
 
-Wcdatool is *work in progress*. You can tell from looking at the source code - there's tons of TODO, TESTING, FIXME, etc. flying around. Also, it is relatively slow as performance has not been the main focus ([Cython](https://cython.org/) might be utilized in the future to increase performance).
+Wcdatool works quite well in its current state - you'll get a well-readable, reasonably structured disassembly output (*objdump* format, *Intel* syntax). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far. **Please note that wcdatool works best when used on executables that contain debug symbols.** If you come across other *unstripped* *Watcom*-based DOS applications that may be used for further testing and development, please let me know.
 
-Nevertheless, it works quite well in its current state - you'll get a well-readable, reasonably structured disassembly output (*objdump* format, *Intel* syntax). Check out issues [#9](https://github.com/fonic/wcdatool/issues/9) and [#11](https://github.com/fonic/wcdatool/issues/11) for games other than *Mortal Kombat* that wcdatool worked nicely for thus far. Please note that wcdatool works best when used on executables that contain debug symbols. If you come across other *unstripped* *Watcom*-based DOS applications that may be used for further testing and development, please let me know.
+**However, the current approach has reached its EOL.** There is no point in advancing it any further (aside from fixing bugs), as there are limits inherent to the fundamental design that cannot be overcome easily. Thus, the next major goal is to cleanly *rewrite the disassembler module* and transition from *static code disassembly* to *execution flow tracing* (e.g. *Mortal Kombat 2* executable contains code within its data object, which is neither discovered nor analyzed with the current approach). Also, instead of treating objects separately, a *linear unified address space* containing all object data shall be implemented. This will allow to *apply fixups on a binary level*, which should simplify dealing with references that cross object boundaries and with placeholders (stubs) that are replaced via fixups at run time.
 
-The *next major goal* is to cleanly rewrite the disassembler module and transition from *static code disassembly* to *execution flow tracing* (e.g. *Mortal Kombat 2* executable contains code within its data object, which is neither discovered nor processed with the current approach).
+Last but not least, wcdatool in its current state is relatively slow, as performance has not been the main focus during development. [Cython](https://cython.org/) might be utilized in the future to increase performance.
 
 ## Output sample
 
@@ -97,17 +97,18 @@ There are multiple ways to use *wcdatool*, but the following instructions should
 
 7. Have a look at the results in `wcdatool/Output`:
    - File `<name-of-executable>_zzz_log.txt` contains *log messages* (same as console output, but without coloring/formatting)
-   - Files `<name-of-executable>_disasm_object_x_disassembly_plain.asm` contain *plain disassembly*
-   - Files `<name-of-executable>_disasm_object_x_disassembly_formatted.asm` contain *formatted disassembly*
-   - Folder `<name-of-executable>_modules` contains *formatted disassembly split into separate files* (this attempts to reconstruct the application's original source files if corresponding debug information is available)
+   - Files `<name-of-executable>_disasm_object_x_disassembly_plain.asm` contain *plain disassembly* (unmodified *objdump* output, useful for reference)
+   - Files `<name-of-executable>_disasm_object_x_disassembly_formatted.asm` contain *formatted disassembly* (this is arguably the most interesting/useful output)
+   - Files `<name-of-executable>_disasm_object_x_disassembly_formatted_deduplicated.asm` contain *formatted deduplicated disassembly* (same as above, but with data portions being compressed for increased readability where applicable)
+   - Folder `<name-of-executable>_modules` contains *formatted disassembly split into separate files* (same as above, additionally attempts to reconstruct an application's original source files if corresponding debug information is available)
 
    **NOTE:** if you are new to assembler/assembly language, check out this [x86 Assembly Guide](https://www.cs.virginia.edu/~evans/cs216/guides/x86.html)
 
 8. Refine the output by analyzing the disassembly, updating the object hints and re-running *wcdatool* (i.e. loop steps 5-8):
-   - Identify and add hints for regions in code objects that are actually data (look for `; misplaced item` comments, `(bad)` assembly instructions and labels with `; access size` comments)
+   - Identify and add hints for regions in code objects that are actually data (look for `; misplaced item` comments, `(bad)` assembly instructions and labels with trailing `; access size` comments)
    - Identify and add hints for regions in data objects that are actually code (look for `call`/`jmp` instructions in code objects with fixup targets pointing to data objects)
    - Check section `Possible object hints` of *wcdatool*'s console output / log file for suggestions (not guaranteed to be correct, but likely a good starting point)
-   - *The ultimate goal here is to eliminate all (or at least most) warnings issued by wcdatool*. Each warning points out a region of the disassembly that does currently seem flawed and therefore requires further attention/investigation. Note that there is a *cascading effect* at work (e.g. a region of data that is falsely intepreted as code may produce bogus branches, leading to further warnings), thus warnings should be tackled one (or few) at a time from first to last with *wcdatool* re-runs in between
+   - *The ultimate goal is to eliminate all (or at least most) warnings issued by wcdatool*. Each warning points out a region of the disassembly that does currently seem flawed and therefore requires further attention/investigation. Note that there is a *cascading effect* at work (e.g. a region of data that is falsely intepreted as code may produce bogus branches, leading to further warnings), thus warnings should be tackled one (or few) at a time from first to last with *wcdatool* re-runs in between
 
    **NOTE:** this is by far the most time-consuming part, but *crucial* to achieve good and clean results (!)
 
@@ -153,4 +154,4 @@ If you want to get in touch with me, give feedback, ask questions or simply need
 
 ##
 
-_Last updated: 08/12/23_
+_Last updated: 08/31/24_

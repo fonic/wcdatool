@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------------------
 #                                                                            -
 #  Created by Fonic <https://github.com/fonic>                               -
-#  Date: 06/20/19 - 07/25/23                                                 -
+#  Date: 06/20/19 - 08/31/24                                                 -
 #                                                                            -
 # ----------------------------------------------------------------------------
 
@@ -101,11 +101,12 @@ Object 2:
 208) start = 0003419EH, end = 000341B6H, type = data, mode = string, comment = String
 209) start = 000341B6H, end = 000341C6H, type = data, mode = string, comment = String
 210) start = 000341C6H, end = 000341D1H, type = data, mode = string, comment = String
+211) start = 000922ECH, end = 0009234CH, type = data, mode = comment, comment = Emulation of registers A0-A14 / B0-B14 of original arcade machine's architecture (TMS34010)
 # Code in data object
 # -> just a stub, there are many more
 # -> may be removed once this has been automated using tracing disassembler
-211) start = 0001D97DH, end = 0001D991H, type = code, mode = default, comment = Code (?)
-212) start = 0001D991H, end = 0001D9A5H, type = code, mode = default, comment = Code (?)
-213) start = 0001D9A5H, end = 0001D9DBH, type = code, mode = default, comment = Code (?)
-214) start = 0001D9DBH, end = 0001DA54H, type = code, mode = default, comment = Code (?)
+300) start = 0001D97DH, end = 0001D991H, type = code, mode = default, comment = Code (?)
+301) start = 0001D991H, end = 0001D9A5H, type = code, mode = default, comment = Code (?)
+302) start = 0001D9A5H, end = 0001D9DBH, type = code, mode = default, comment = Code (?)
+303) start = 0001D9DBH, end = 0001DA54H, type = code, mode = default, comment = Code (?)
 #...

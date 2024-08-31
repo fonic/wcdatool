@@ -7,7 +7,7 @@
 #  Main Part Fixup / Relocation                                           -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 02/06/22                                              -
+#  Date: 06/20/19 - 07/28/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 #                                     -
 # -------------------------------------
 
-# - nothing atm
+# - Nothing atm
 
 
 # -------------------------------------
@@ -380,8 +380,9 @@ def fixup_relocation_read_decode(wdump, input_file, outfile_template):
 				break
 
 	# Write results to file
-	logging.debug("Writing decoded data to file...")
-	write_file(outfile_template % "fixup_data_decoded.txt", format_pprint(fixup))
+	output = format_pprint(fixup)
+	logging.debug("Writing decoded data to file (%d lines)..." % len(output))
+	write_file(outfile_template % "fixup_data_decoded.txt", output)
 
 	# Return results
 	return fixup

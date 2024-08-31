@@ -7,7 +7,7 @@
 #  Main Part Wdump                                                        -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 06/03/22                                              -
+#  Date: 06/20/19 - 08/31/24                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 #                                     -
 # -------------------------------------
 
-# - nothing atm
+# - Nothing atm
 
 
 # -------------------------------------
@@ -53,13 +53,13 @@ from modules.module_pretty_print import *
 # Splits key value pair of wdump output line; wdump format: 'key = value', e.g. 'file offset = 0000F474H'
 # NOTE: whitespace in line needs to be reduced to single characters prior to calling this
 # NOTE: key regex is non-greedy, e.g. 'offset = 1234H = 5678H' -> ('offset', '1234H = 5678H')
-# NOTE: pipe character '|' only ever seems to appear as separator in value string of flag list -> split string into list
+# NOTE: pipe character '|' only ever seems to appear as separator in value string of flag list -> split string into list, convert items to lowercase
 def wdump_split_keyval(line):
-	match = re.match("^(.+?) = (.+)$", line)
+	match = re.match(r"^(.+?) = (.+)$", line)
 	if (match):
 		key = match.group(1).lower()
 		value = match.group(2)
-		if (re.match("^[0-9a-fA-F]+H$", value)):
+		if (re.match(r"^[0-9a-fA-F]+H$", value)):
 			value = int(value[0:-1], 16)
 		elif ("|" in value):
 			value = [ item.strip().lower() for item in str.split(value, "|") ]
@@ -98,7 +98,7 @@ def wdump_decode_data(section):
 			if (key != None and value != None):
 				decoded_data[key] = value
 				continue
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                            DOS/16M EXE Header - BW
 	# ==============================================================================
@@ -146,7 +146,7 @@ def wdump_decode_data(section):
 			if (key != None and value != None):
 				decoded_data[key] = value
 				continue
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                       Linear EXE Header (OS/2 V2.x) - LE
 	# ==============================================================================
@@ -165,7 +165,7 @@ def wdump_decode_data(section):
 			if (key != None and value != None):
 				decoded_data[key] = value
 				continue
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                                  Object Table
 	# ==============================================================================
@@ -202,11 +202,11 @@ def wdump_decode_data(section):
 			line2 = str.join(" ", line.split())
 
 			# Skip '='-only lines
-			if (re.match("^[=]+$", line2)):
+			if (re.match(r"^[=]+$", line2)):
 				continue
 
 			# New object
-			match = re.match("^object ([0-9]+): (.+)$", line2)
+			match = re.match(r"^object ([0-9]+): (.+)$", line2)
 			if (match):
 				num = int(match.group(1))
 				decoded_data[num] = OrderedDict([("num", num)])
@@ -214,10 +214,10 @@ def wdump_decode_data(section):
 				line2 = match.group(2)
 
 			# New page
-			match = re.match("^page # ([0-9]+) map page = ([0-9a-fA-F]+)H file ofs = ([0-9a-fA-F]+)H flgs = ([0-9a-fA-F]+)H (.+)$", line2)
+			match = re.match(r"^page # ([0-9]+) map page = ([0-9a-fA-F]+)H file ofs = ([0-9a-fA-F]+)H flgs = ([0-9a-fA-F]+)H (.+)$", line2)
 			if (match):
 				if (current_object == None):
-					logging.warning("stray page: '%s'" % line2)
+					logging.warning("Stray page: '%s'" % line2)
 					continue
 				if (not "pages" in current_object):
 					current_object["pages"] = OrderedDict()
@@ -227,10 +227,10 @@ def wdump_decode_data(section):
 				continue
 
 			# New segment
-			match = re.match("^segment # ([0-9]+) offset: ([0-9a-fA-F]+)$", line2)
+			match = re.match(r"^segment # ([0-9]+) offset: ([0-9a-fA-F]+)$", line2)
 			if (match):
 				if (current_page == None):
-					logging.warning("stray segment: '%s'" % line2)
+					logging.warning("Stray segment: '%s'" % line2)
 					continue
 				#current_page["segments"].append( { "num": int(match.group(1)), "offset": int(match.group(2), 16), "data": b'' } )
 				#current_segment = current_page["segments"][-1]
@@ -240,10 +240,10 @@ def wdump_decode_data(section):
 				continue
 
 			# Segment data (NOTE: matching against original line here to correctly capture hex data)
-			match = re.match("^([0-9a-fA-F]+):  ([0-9a-fA-F ]+)    (.{16})$", line)
+			match = re.match(r"^([0-9a-fA-F]+):  ([0-9a-fA-F ]+)    (.{16})$", line)
 			if (match):
 				if (current_segment == None):
-					logging.warning("stray segment data: '%s'" % line2)
+					logging.warning("Stray segment data: '%s'" % line2)
 					continue
 				hexdata = str.join(" ", match.group(2).split())
 				current_segment["data"] += bytes.fromhex(hexdata)
@@ -251,14 +251,14 @@ def wdump_decode_data(section):
 
 			# Object data
 			if (current_object == None):
-				logging.warning("stray object data: '%s'" % line2)
+				logging.warning("Stray object data: '%s'" % line2)
 				continue
 			key, value = wdump_split_keyval(line2)
 			if (key != None and value != None):
 				current_object[key] = value
 				continue
 
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                              Resident Names Table
 	# ==============================================================================
@@ -281,7 +281,7 @@ def wdump_decode_data(section):
 			for data in line2.split(" "):
 				data = data.split(":")
 				if (len(data) != 2):
-					logging.warning("invalid data: '%s'" % line2)
+					logging.warning("Invalid data: '%s'" % line2)
 					continue
 				decoded_data[int(data[0])] = int(data[1], 16)
 
@@ -301,7 +301,7 @@ def wdump_decode_data(section):
 		for line in section["data"]:
 			line2 = str.join(" ", line.split())
 
-			match = re.match("^([0-9]+) ([0-9]+) src off = ([0-9a-fA-F ]+) object # = ([0-9]+) target off = ([0-9a-fA-F ]+)$", line2)
+			match = re.match(r"^([0-9]+) ([0-9]+) src off = ([0-9a-fA-F ]+) object # = ([0-9]+) target off = ([0-9a-fA-F ]+)$", line2)
 			if (match):
 				decoded_data.append(OrderedDict([("source type", int(match.group(1))), ("target flags", int(match.group(2))), ("source offset", int(match.group(3), 16)), ("object", int(match.group(4))), ("target offset", int(match.group(5), 16))]))
 				continue
@@ -309,7 +309,7 @@ def wdump_decode_data(section):
 			if (line2 == "Source Target" or line2 == "type flags" or line2 == "==== ===="):
 				continue
 
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                            Nonresident Names Table
 	# ==============================================================================
@@ -347,11 +347,11 @@ def wdump_decode_data(section):
 			line2 = str.join(" ", line.split())
 
 			# Skip '='-only lines
-			if (re.match("^[=]+$", line2)):
+			if (re.match(r"^[=]+$", line2)):
 				continue
 
 			# Handle subsections
-			if (i < len(section["data"])-1 and re.match("^[=]+$", str.join(" ", section["data"][i+1].split()))):
+			if (i < len(section["data"])-1 and re.match(r"^[=]+$", str.join(" ", section["data"][i+1].split()))):
 				if (line2 == "Languages"):
 					decoded_data["languages"] = []
 					target = decoded_data["languages"]
@@ -360,7 +360,7 @@ def wdump_decode_data(section):
 					decoded_data["segments"] = []
 					target = decoded_data["segments"]
 					continue
-				match = re.match("^Section ([0-9]+) \(off=([0-9a-fA-F]+)\)$", line2)
+				match = re.match(r"^Section ([0-9]+) \(off=([0-9a-fA-F]+)\)$", line2)
 				if (match):
 					if (not "sections" in decoded_data):
 						decoded_data["sections"] = OrderedDict()
@@ -377,7 +377,7 @@ def wdump_decode_data(section):
 				if (key != None and value != None):
 					target[key] = value
 					continue
-				logging.warning("invalid data: '%s'" % line2)
+				logging.warning("Invalid data: '%s'" % line2)
 
 	#                            Module Info (section 0)
 	# ==============================================================================
@@ -441,7 +441,7 @@ def wdump_decode_data(section):
 				continue
 
 			# New module
-			match = re.match("^([0-9]+)\) Name: (.+)$", line2)
+			match = re.match(r"^([0-9]+)\) Name: (.+)$", line2)
 			if (match):
 				num = int(match.group(1))
 				decoded_data[num] = OrderedDict([("num", num), ("name", match.group(2)), ("language", None), ("locals", OrderedDict()), ("types", OrderedDict()), ("lines", OrderedDict())])
@@ -453,25 +453,25 @@ def wdump_decode_data(section):
 
 			# Check if within module
 			if (current_module == None):
-				logging.warning("stray module data: '%s'" % line2)
+				logging.warning("Stray module data: '%s'" % line2)
 				continue
 
 			# Module data
-			match = re.match("^Language is (.+)$", line2)
+			match = re.match(r"^Language is (.+)$", line2)
 			if (match):
 				current_module["language"] = match.group(1)
 				continue
-			match = re.match("^(.+): num = ([0-9]+), offset = ([0-9a-fA-F]+)H$", line2)
+			match = re.match(r"^(.+): num = ([0-9]+), offset = ([0-9a-fA-F]+)H$", line2)
 			if (match):
 				key = match.group(1).lower()
 				if (not key in current_module):
-					logging.warning("invalid module data: '%s'" % line2)
+					logging.warning("Invalid module data: '%s'" % line2)
 					continue
 				current_module[key]["count"] = int(match.group(2))
 				current_module[key]["offset"] = int(match.group(3), 16)
 				continue
 
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                            Global Info (section 0)
 	# ==============================================================================
@@ -492,10 +492,10 @@ def wdump_decode_data(section):
 			line2 = str.join(" ", line.split())
 
 			# New global
-			match = re.match("^Name: (.+)$", line2)
+			match = re.match(r"^Name: (.+)$", line2)
 			if (match):
 				name = match.group(1)
-				match = re.match("^W\?([^$]+)\$", name)
+				match = re.match(r"^W\?([^$]+)\$", name)
 				if (match):
 					name = match.group(1)
 				decoded_data.append(OrderedDict([("name", name), ("module", None), ("segment", None), ("offset", None), ("type", None)]))
@@ -504,31 +504,31 @@ def wdump_decode_data(section):
 
 			# Check if within global
 			if (current_global == None):
-				logging.warning("stray global data: '%s'" % line2)
+				logging.warning("Stray global data: '%s'" % line2)
 				continue
 
 			# Global data
-			match = re.match("^address = ([0-9]+):([0-9a-fA-F]+)$", line2)
+			match = re.match(r"^address = ([0-9]+):([0-9a-fA-F]+)$", line2)
 			if (match):
 				current_global["segment"] = int(match.group(1))
 				current_global["offset"] = int(match.group(2), 16)
 				continue
-			match = re.match("^module index = ([0-9]+)$", line2)
+			match = re.match(r"^module index = ([0-9]+)$", line2)
 			if (match):
 				current_global["module"] = int(match.group(1))
 				continue
-			match = re.match("^kind: (.*)$", line2)
+			match = re.match(r"^kind: (.*)$", line2)
 			if (match):
 				if (match.group(1).endswith("(code)")):
 					current_global["type"] = "code"
 				elif (match.group(1).endswith("(data)")):
 					current_global["type"] = "data"
 				else:
-					logging.warning("invalid global kind: '%s'" % line2)
+					logging.warning("Invalid global kind: '%s'" % line2)
 					current_global["type"] = "unknown"
 				continue
 
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                             Addr Info (section 0)
 	# ==============================================================================
@@ -549,7 +549,7 @@ def wdump_decode_data(section):
 			line2 = str.join(" ", line.split())
 
 			# New block
-			match = re.match("^Base: fileoff = ([0-9a-fA-F]+)H seg = ([0-9a-fA-F]+)H, off = ([0-9a-fA-F]+)H$", line2)
+			match = re.match(r"^Base: fileoff = ([0-9a-fA-F]+)H seg = ([0-9a-fA-F]+)H, off = ([0-9a-fA-F]+)H$", line2)
 			if (match):
 				decoded_data.append(OrderedDict([("file offset", int(match.group(1), 16)), ("segment", int(match.group(2), 16)), ("offset", int(match.group(3), 16)), ("entries", OrderedDict())]))
 				current_block = decoded_data[-1]
@@ -557,18 +557,18 @@ def wdump_decode_data(section):
 
 			# Check if within block
 			if (current_block == None):
-				logging.warning("stray block data: '%s'" % line2)
+				logging.warning("Stray block data: '%s'" % line2)
 				continue
 
 			# Block data
-			match = re.match("^([0-9]+)\) fileoff = ([0-9a-fA-F]+)H, Size = ([0-9a-fA-F]+)H @([0-9a-fA-F]+)H, mod_index = ([0-9]+)$", line2)
+			match = re.match(r"^([0-9]+)\) fileoff = ([0-9a-fA-F]+)H, Size = ([0-9a-fA-F]+)H @([0-9a-fA-F]+)H, mod_index = ([0-9]+)$", line2)
 			if (match):
 				num = int(match.group(1))
 				#current_block["entries"][num] = OrderedDict([("num", num), ("file offset", int(match.group(2), 16)), ("size", int(match.group(3), 16)), ("size@", int(match.group(4), 16)), ("module", int(match.group(5)))])
 				current_block["entries"][num] = OrderedDict([("num", num), ("file offset", int(match.group(2), 16)), ("size", int(match.group(3), 16)), ("offset", int(match.group(4), 16)), ("module", int(match.group(5)))])
 				continue
 
-			logging.warning("invalid data: '%s'" % line2)
+			logging.warning("Invalid data: '%s'" % line2)
 
 	#                                  Object Hints
 	# ==============================================================================
@@ -589,7 +589,7 @@ def wdump_decode_data(section):
 	#     2) offset = 000118B4H, length = 00000400H, type = data, mode = dwords, comment = Table of DWORDs
 	#     ...
 	#   ...
-	# NOTE: not native wdump, added specifically for wcdctool to support user-specified object hints to aid disassembly
+	# NOTE: not native wdump, added specifically for wcdatool to support user-specified object hints to aid disassembly
 	# NOTE: 'comment' has to be last (see special handling below)
 	# NOTE: resulting items (dicts) will always have keys 'start', 'end' and 'length', no matter which format is used
 	elif (section["name"].startswith("Object Hints")):
@@ -603,7 +603,7 @@ def wdump_decode_data(section):
 				continue
 
 			# New block
-			match = re.match("^Object ([0-9]+):$", line2)
+			match = re.match(r"^Object ([0-9]+):$", line2)
 			if (match):
 				objnum = int(match.group(1))
 				decoded_data[objnum] = (OrderedDict([("objnum", objnum), ("entries", OrderedDict())]))
@@ -612,12 +612,12 @@ def wdump_decode_data(section):
 
 			# Check if within block
 			if (current_block == None):
-				logging.warning("stray block data: '%s'" % line2)
+				logging.warning("Stray block data: '%s'" % line2)
 				continue
 
 			# Block data
 			# x) start = ...H, end = ...H, type = ..., mode = ..., comment = ...
-			match = re.match("^([0-9]+)\) start = ([0-9a-fA-F]+)H, end = ([0-9a-fA-F]+)H, type = (.+), mode = (.+?)(, .*)?$", line2)
+			match = re.match(r"^([0-9]+)\) start = ([0-9a-fA-F]+)H, end = ([0-9a-fA-F]+)H, type = (.+), mode = (.+?)(, .*)?$", line2)
 			if (match):
 				num = int(match.group(1))
 				start = int(match.group(2), 16)
@@ -628,7 +628,7 @@ def wdump_decode_data(section):
 				tail = match.group(6)
 			else:
 				# x) offset = ...H, length = ...H, type = ..., mode = ..., comment = ...
-				match = re.match("^([0-9]+)\) offset = ([0-9a-fA-F]+)H, length = ([0-9a-fA-F]+)H, type = (.+), mode = (.+?)(, .*)?$", line2)
+				match = re.match(r"^([0-9]+)\) offset = ([0-9a-fA-F]+)H, length = ([0-9a-fA-F]+)H, type = (.+), mode = (.+?)(, .*)?$", line2)
 				if (match):
 					num = int(match.group(1))
 					start = int(match.group(2), 16)
@@ -646,44 +646,44 @@ def wdump_decode_data(section):
 							continue
 						(key, value) = wdump_split_keyval(item)
 						if (key == "comment"): # special handling of key 'comment': consume everything after '=' as value, break loop -> allows comments to contain ','
-							match = re.search("comment = (.+)", tail)
+							match = re.search(r"comment = (.+)", tail)
 							keyvals[key] = match.group(1)
 							break
 						elif (key != None and value != None):
 							keyvals[key] = value
 						else:
-							logging.warning("invalid key-value pair '%s': '%s'" % (item, line2))
+							logging.warning("Invalid key-value pair '%s': '%s'" % (item, line2))
 
 				# Sanity checks
 				# NOTE: we check everything that is checkable at this point
 				if (num in current_block["entries"]):
-					logging.warning("invalid entry: entry with same num already exists: %s" % line2)
+					logging.warning("Invalid entry: entry with same num already exists: %s" % line2)
 					continue
 				if (end < start):
-					logging.warning("invalid entry: invalid range (end < start): %s" % line2)
+					logging.warning("Invalid entry: invalid range (end < start): %s" % line2)
 					continue
 				if (type_ == "code"):
 					if (not mode in ("default", "comment")):
-						logging.warning("invalid entry: invalid mode '%s' for type '%s': '%s'" % (mode, type_, line2))
+						logging.warning("Invalid entry: invalid mode '%s' for type '%s': '%s'" % (mode, type_, line2))
 						continue
 				elif (type_ == "data"):
 					if (not mode in ("default", "comment", "auto-strings", "strings", "string", "bytes", "words", "dwords", "fwords", "qwords", "tbytes") and not mode.startswith("struct")):
-						logging.warning("invalid entry: invalid mode '%s' for type '%s': '%s'" % (mode, type_, line2))
+						logging.warning("Invalid entry: invalid mode '%s' for type '%s': '%s'" % (mode, type_, line2))
 						continue
 				else:
-					logging.warning("invalid entry: invalid type '%s': '%s'" % (type_, line2))
+					logging.warning("Invalid entry: invalid type '%s': '%s'" % (type_, line2))
 					continue
 
 				# Store entry
 				current_block["entries"][num] = OrderedDict([("num", num), ("start", start), ("end", end), ("length", length), ("type", type_), ("mode", mode)] + list(keyvals.items()))
 				continue
 
-			logging.warning("invalid entry: '%s'" % line2)
+			logging.warning("Invalid entry: '%s'" % line2)
 
 	#                              <Unknown section>
 	# ==============================================================================
 	else:
-		logging.warning("no decode rule for section '%s'" % section["name"])
+		logging.warning("No decoding case for section '%s'" % section["name"])
 		decoded_data = section["data"]
 
 
@@ -712,7 +712,7 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 			logging.error(sub_process.stdout if (sub_process.stdout != "") else "<no output>")
 			return None
 		output = sub_process.stdout.splitlines()
-		logging.debug("Writing plain output to file...")
+		logging.debug("Writing plain output to file (%d lines)..." % len(output))
 		write_file(outfile_template % "wdump_output_plain.txt", output)
 	else:
 		# Read wdump output from file
@@ -720,6 +720,7 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 		try:
 			with open(wdump_output, "r") as file:
 				output = file.read().splitlines()
+			logging.debug("Read %d lines" % len(output))
 		except Exception as exception:
 			logging.error("Error: %s" % str(exception))
 			return None
@@ -729,7 +730,9 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 		logging.debug("Reading additional output from file '%s'..." % wdump_add_output)
 		try:
 			with open(wdump_add_output, "r") as file:
-				output += file.read().splitlines()
+				add_output = file.read().splitlines()
+				output += add_output
+			logging.debug("Read %d lines" % len(add_output))
 		except Exception as exception:
 			logging.error("Error: %s" % str(exception))
 			return None
@@ -749,11 +752,11 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 			continue
 
 		# Skip '[=]{78}' lines (see below)
-		if (re.match("^[=]{78}$", line2)):
+		if (re.match(r"^[=]{78}$", line2)):
 			continue
 
 		# New section (lookahead one line; if next line is '[=]{78}', then current line is name of new section)
-		if (i < len(output)-1 and re.match("^[=]{78}$", str.join(" ", output[i+1].split()))):
+		if (i < len(output)-1 and re.match(r"^[=]{78}$", str.join(" ", output[i+1].split()))):
 			name = line2
 			name2 = name.lower()
 			sections[name2] = OrderedDict([("name", name), ("data", [])])
@@ -762,7 +765,7 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 
 		# Report stray lines
 		if (current_section == None):
-			logging.warning("stray line: '%s'" % line)
+			logging.warning("Stray line: '%s'" % line)
 			continue
 
 		# Add original line to data of current section
@@ -784,7 +787,7 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 	logging.info("Merging numbered sections...")
 	sections2 = OrderedDict()
 	for section in sections:
-		match = re.match("^(.+) \(section ([0-9]+)\)$", sections[section]["name"])
+		match = re.match(r"^(.+) \(section ([0-9]+)\)$", sections[section]["name"])
 		if (match):
 			name = match.group(1)
 			name2 = name.lower()
@@ -803,8 +806,9 @@ def wdump_parse_output(input_file, wdump_exec, wdump_output, wdump_add_output, o
 		logging.debug(sections[section]["name"])
 
 	# Write parsed output to file
-	logging.info("Writing parsed output to file...")
-	write_file(outfile_template % "wdump_output_parsed.txt", format_pprint(sections))
+	output = format_pprint(sections)
+	logging.info("Writing parsed output to file (%d lines)..." % len(output))
+	write_file(outfile_template % "wdump_output_parsed.txt", output)
 
 	# Return results
 	return sections

@@ -7,7 +7,7 @@
 #  Module Pretty Print                                                    -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 03/24/22                                              -
+#  Date: 06/20/19 - 07/29/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,17 +18,15 @@
 #                                     -
 # -------------------------------------
 
-# - Extend 'format_pprint()':
-#   - Add option 'hexdump_bytes=False'; if enabled, output hexdump of bytes
-#     objects; output format (from Okteta; mark line, right-click, 'Copy As'
-#     -> 'View in Plain Text'):
+# - Extend hex dumps to support ISO-8859-1 characters (i.e. values 128-255;
+#   currently limited to ASCII, i.e. values 32-127); if possible, support
+#   arbitrary encodings and make this configurable via 'hex_char_encoding=
+#   "ISO-8859-1"'
 #
-#     0000:F1E0 | 36 0F 02 6C  53 07 00 2B  0F 02 74 53  07 00 1D 0F | 6..lS..+..tS....
-#     ^ 32-bit offset, simply split by ':' in the middle, i.e. two 16-bit words
-#                 ^ hex 4 x 4 Bytes                                    ^ data in printable form (may contain '|') -> see 'is_ascii()', 'wcdctool_legacy.py'
-#
-# - Performance is not great, noticable when writing disassembly results to
-#   files; try to improve performance
+# - Performance is not great, especially noticable when writing disassembly
+#   results to files; investigate and try to improve performance; some opti-
+#   mizations are already implemented, but currently deactivated (prevent
+#   further recursion early)
 
 
 # -------------------------------------
@@ -57,9 +55,9 @@ import sys
 
 # Recursively generate pretty print of arbitrary objects
 def format_pprint(obj, level_indent="  ", max_depth=None, verbose_output=True,
-                  justify_output=True, prevent_loops=True, prevent_revisit=False,
-                  explore_objects=True, excluded_ids=[], visited_ids=[],
-                  path_ids=[], current_depth=0):
+                  justify_output=True, hex_dumps=True, prevent_loops=True,
+                  prevent_revisit=False, explore_objects=True, excluded_ids=[],
+                  visited_ids=[], path_ids=[], current_depth=0):
 	"""Recursively generates pretty print of arbitrary objects.
 
 	Recursively generates pretty print of contents of arbitrary objects. Contents
@@ -67,12 +65,18 @@ def format_pprint(obj, level_indent="  ", max_depth=None, verbose_output=True,
 	by various parameters (see below).
 
 	Arguments:
+	    level_indent:    Indentation string prepended to output lines (multiplied
+	                     with the current recursion depth).
 	    max_depth:       Maximum allowed depth of recursion. If depth is exceeded,
 	                     recursion is stopped.
 	    verbose_output:  Produce verbose output. Adds some additional details for
-	                     certain data types
+	                     certain data types.
 	    justify_output:  Justify output. Produces output in block-like appearance
 	                     with equal spacing between keys and values.
+	    hex_dumps:       Produce hex dumps of bytes and other bytes-like objects
+	                     (bytes, bytearray, memoryview). As hex dumps can be quite
+	                     extensive, they may be toggled separately via this flag
+	                     instead of depending on flag 'verbose_output'.
 	    prevent_loops:   Detect and prevent recursion loops by keeping track of
 	                     already visited objects within current recursion path.
 	    prevent_revisit: Detect and prevent revisiting of already visited objects.
@@ -105,7 +109,7 @@ def format_pprint(obj, level_indent="  ", max_depth=None, verbose_output=True,
 	indent = level_indent * current_depth
 
 	# Check if object has already been visited within current recursion path.
-	# If so, we encoutered a loop and thus need to break off recursion. If
+	# If so, we encountered a loop and thus need to break off recursion. If
 	# not, continue and add object to list of visited objects within current
 	# recursion path
 	if (prevent_loops == True):
@@ -215,7 +219,7 @@ def format_pprint(obj, level_indent="  ", max_depth=None, verbose_output=True,
 			#valstr = "<object, class '%s'>" % type(value).__name__ if (verbose_output == True) else "<object>"
 			valstr = "<object, class '%s.%s'>" % (value.__class__.__module__, value.__class__.__name__) if (verbose_output == True) else "<object>"
 			if (explore_objects == True):
-				exp_obj = True # this ensures we only explore objects that do not represent a base type (i.e. everything listed above)
+				exp_obj = True # this ensures we only explore objects that do NOT represent a base type (i.e. everything listed above)
 		else: # should never occur as everything in Python is an 'object' and should be caught above
 			#valstr = "'%s'" % str(value) if (verbose_output == True) else str(value)
 			raise TypeError("unsupported value type: '%s'" % type(value))
@@ -223,9 +227,26 @@ def format_pprint(obj, level_indent="  ", max_depth=None, verbose_output=True,
 		# Generate key-value line from key/value strings and add to output
 		output.append(indent + keystr + " " + valstr)
 
-		# Explore value object recursively if it meets certain criteria
-		if (isinstance(value, dict) or isinstance(value, tuple) or isinstance(value, list) or isinstance(value, set) or
-		    isinstance(value, frozenset) or (isinstance(value, object) and exp_obj == True)):
+		# Generate hex dump of bytes and other bytes-like objects (only if enabled)
+		# (hex_dumps == True is tested separately in order to prevent unnecessary
+		# recursion of these data types by elif below in case of hex_dumps == False)
+		#if (hex_dumps == True and (isinstance(value, bytes) or isinstance(value, bytearray) or isinstance(value, memoryview))):
+		if (isinstance(value, bytes) or isinstance(value, bytearray) or isinstance(value, memoryview)):
+			if (hex_dumps == True):
+				for offset in range(0, len(value), 16):
+					output.append(
+						(level_indent * (current_depth + 1)) + "%04x:%04x | %-50s | %-16s" % (
+							(offset >> 16) & 0xffff, offset & 0xffff,
+							#str.join("  ", [ value[offset:offset+4].hex(sep=" "), value[offset+4:offset+8].hex(sep=" "), value[offset+8:offset+12].hex(sep=" "), value[offset+12:offset+16].hex(sep=" ") ]),
+							value[offset:offset+4].hex(sep=" ") + "  " + value[offset+4:offset+8].hex(sep=" ") + "  " + value[offset+8:offset+12].hex(sep=" ") + "  " + value[offset+12:offset+16].hex(sep=" "),
+							str.join("", [ chr(value[i]) if (value[i] in range(32, 127)) else "." for i in range(offset, min(offset+16, len(value))) ])
+						)
+					)
+
+		# Explore value object recursively if of certain type -or- arbitrary object +
+		# exploration flag set (see 'exp_obj = True' above)
+		elif (isinstance(value, dict) or isinstance(value, tuple) or isinstance(value, list) or isinstance(value, set) or
+		      isinstance(value, frozenset) or (isinstance(value, object) and exp_obj == True)):
 			# These could be used to prevent recursion beforehand, i.e. before calling this
 			# function again, as an alternative to checks at beginning of function. Leaving
 			# this here for future reference
@@ -246,13 +267,9 @@ def format_pprint(obj, level_indent="  ", max_depth=None, verbose_output=True,
 			#	output[-1] += " <item excluded>"
 			#	continue
 			output += format_pprint(value, level_indent=level_indent, max_depth=max_depth, verbose_output=verbose_output,
-			                        justify_output=justify_output, prevent_loops=prevent_loops, prevent_revisit=prevent_revisit,
-			                        explore_objects=explore_objects, excluded_ids=excluded_ids, visited_ids=visited_ids,
-			                        path_ids=path_ids, current_depth=current_depth + 1)
-
-		# TODO: hexdump of bytes and byte-like objects -> do it right here, no recursion
-		#elif (isinstance(value, bytes) or isinstance(value, bytearray) or isinstance(value, memoryview)):
-			# ...
+			                        justify_output=justify_output, hex_dumps=hex_dumps, prevent_loops=prevent_loops,
+			                        prevent_revisit=prevent_revisit, explore_objects=explore_objects, excluded_ids=excluded_ids,
+			                        visited_ids=visited_ids, path_ids=path_ids, current_depth=current_depth + 1)
 
 	# Remove object from list of visited objects within current recursion path
 	# (part of recursion loop detection; this 'rolls back' the laid out path)

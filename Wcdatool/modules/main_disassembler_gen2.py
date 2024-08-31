@@ -4,10 +4,10 @@
 # -------------------------------------------------------------------------
 #                                                                         -
 #  Watcom Disassembly Tool (wcdatool)                                     -
-#  Main Part Disassembler                                                 -
+#  Main Part Disassembler (Generation 2)                                  -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 07/25/23                                              -
+#  Date: 06/20/19 - 08/31/24                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 #                                     -
 # -------------------------------------
 
-# - See '../../documents/todo.txt'
+# - See '../../documents/TODO (<date>).txt'
 #
 # - Below are older TODOs that need to be checked/sorted out (might be out of date):
 #
@@ -54,7 +54,7 @@
 #                                     -
 # -------------------------------------
 
-__all__ = [ "disassemble_objects" ]
+__all__ = [ "disassemble_objects_gen2" ]
 
 
 # -------------------------------------
@@ -91,8 +91,8 @@ def split_asm_line(line):
 		raise TypeError("line must be type str, not %s" % type(line).__name__)
 
 	# Regex: (.*?) non-greedy, (;.*)? optional capturing group
-	#match = re.match("^([ ]*)([0-9a-fA-F]+):[ \t]+([0-9a-fA-F ]+)[ \t]+([^ ]+)[ ]*(.*?)\s*(;.*)?$", line) # tabs replaced with '[ \t]+'; objdump output comes with tabs, but we later replace those with spaces
-	match = re.match("^([ ]*)([0-9a-fA-F]+):\t([0-9a-fA-F ]+)\t([^ ]+)[ ]*(.*?)\s*(;.*)?$", line)
+	#match = re.match(r"^([ ]*)([0-9a-fA-F]+):[ \t]+([0-9a-fA-F ]+)[ \t]+([^ ]+)[ ]*(.*?)\s*(;.*)?$", line) # tabs replaced with '[ \t]+'; objdump output comes with tabs, but we later replace those with spaces
+	match = re.match(r"^([ ]*)([0-9a-fA-F]+):\t([0-9a-fA-F ]+)\t([^ ]+)[ ]*(.*?)\s*(;.*)?$", line)
 	if (match):
 		return OrderedDict([("indent", match.group(1)), ("offset", int(match.group(2), 16)), ("data", bytes.fromhex(match.group(3).strip())), ("command", match.group(4)), ("arguments", match.group(5)), ("comment", match.group(6))])
 	return None
@@ -239,7 +239,7 @@ def generate_code_disassembly(data, start_ofs, end_ofs, mode, objdump_exec, line
 
 		# Reduce output to actual code listing
 		for i in range(0, len(output)):
-			if (re.match("^([0-9a-fA-F]+) <.data(\+0x[0-9a-fA-F]+)?>:$", output[i])):
+			if (re.match(r"^([0-9a-fA-F]+) <.data(\+0x[0-9a-fA-F]+)?>:$", output[i])):
 				output = output[i+1:]
 				break
 
@@ -249,7 +249,7 @@ def generate_code_disassembly(data, start_ofs, end_ofs, mode, objdump_exec, line
 			line = output[i]
 			# Replace tabs after offset and hex data with '  ' (as tabs mess with
 			# indentation when comments are added later on, e.g. for fixups)
-			# FIXME: this is desirable, but make lots of problems for split_asm_line(),
+			# FIXME: this is desirable, but creates lots of problems for split_asm_line(),
 			#        thus disabled for now; we'll come back to this when migrating from
 			#        text lines to dicts, i.e. when only one initial split takes place
 			#line = line.replace(":\t", ":  ") # tab after '<offset>:'
@@ -337,7 +337,8 @@ def generate_data_disassembly(data, start_ofs, end_ofs, mode):
 	#logging.debug("Disassembling data from offset 0x%x to offset 0x%x (mode: %s)..." % (start_ofs, end_ofs, mode))
 
 	if (mode == "default"):									# Default mode
-		mode = "bytes"
+		#mode = "bytes"
+		mode = "auto-strings"								# works nicely as default, helps with investigating uncharted data objects
 
 	if (mode == "auto-strings"): 							# ASCII string auto-detection + bytes
 		min_len = 3											# minimum string length (excluding trailing '\0' if need_null == True)
@@ -646,7 +647,7 @@ def generate_struct_disassembly(data, start_ofs, end_ofs, mode):
 	for item in struct_members:
 
 		# Array types
-		match = re.match("^(chars|bytes|words|dwords|fwords|qwords|tbytes)\[([0-9]+)\]$", item)
+		match = re.match(r"^(chars|bytes|words|dwords|fwords|qwords|tbytes)\[([0-9]+)\]$", item)
 		if (match):
 			type_ = match.group(1)
 			count = int(match.group(2))
@@ -1053,9 +1054,9 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 					if (not len(matching_globals) > 0):
 						logging.warning("Empty list in global map for fixup (target object %d, target offset 0x%x): %s" % (record["target object"], record["target offset"], line))
 						continue
-					##match = re.search("(?:cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % record["target offset"], asm["arguments"].strip())
-					##match = re.search("(?:cs:|ds:|es:|fs:|gs:|ss:)?0x0*%x" % record["target offset"], asm["arguments"].strip())
-					#match = re.search("0x0*%x" % record["target offset"], asm["arguments"].strip())
+					##match = re.search(r"(?:cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % record["target offset"], asm["arguments"].strip())
+					##match = re.search(r"(?:cs:|ds:|es:|fs:|gs:|ss:)?0x0*%x" % record["target offset"], asm["arguments"].strip())
+					#match = re.search(r"0x0*%x" % record["target offset"], asm["arguments"].strip())
 					#if (match == None):
 					#	logging.warning("Failed to match fixup target offset 0x%x: %s" % (record["target offset"], line))
 					#	continue
@@ -1091,7 +1092,7 @@ def generate_formatted_disassembly(object, globals_, fixrel):
 			#       does nothing since offset has already been replaced with fixup target label
 			#       at this point (see 'line.replace()' in code block above)
 			if (asm["command"] == "call" or asm["command"].startswith("j") or asm["command"].startswith("loop")):
-				match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
+				match = re.match(r"^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
 				if (match != None):
 					ofs_str = match.group(0) # entire string including '0x'
 					ofs_val = int(match.group(1), 16)
@@ -1275,7 +1276,7 @@ def preprocess_globals(wdump):
 		for global_ in subsec["data"]:
 			if ("name" in global_):
 				if (global_["name"] in name_map): # check for and resolve name clashing
-					# postfix module number if available (might already revolve clash)
+					# postfix module number if available (might already resolve clash)
 					base_name = new_name = "%s_mod_%d" % (global_["name"], global_["module"]) if ("module" in global_) else global_["name"]
 					# postfix increasing index number starting with 2 (only if still clashing)
 					i = 1
@@ -1603,6 +1604,9 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 			#   been processed (e.g. MK1.EXE, object 1, 0x2cdf2 - 0x2ce2a)
 			# - request loop break logic used to be able to use 'continue' below +
 			#   'jmp' still has to be processed
+			# TODO:
+			# There might be additional relevant assembler instructions:
+			# iretw, iretq, sysexit, sysret, uiret
 			if (asm["command"] in ("ret", "iret", "iretd", "jmp")):
 				break_loop = True
 
@@ -1616,10 +1620,13 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 			# usually only jump to / loop over code that PRECEDES the 'loop' command
 			# (and is thus already discovered); however, it might make sense as loop
 			# targets are certainly code (and should be marked as such)
+			# TODO:
+			# There might be additional relevant assembler instructions:
+			# syscall, sysenter
 			if (asm["command"] == "call" or asm["command"].startswith("j")):		# call + jump commands
 
 				# Direct branch (i.e. branch via direct/constant address/offset)
-				match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
+				match = re.match(r"^0x([0-9a-fA-F]+)$", asm["arguments"].strip())
 				if (match != None):
 					bt_obj = block["object"]										# assume branch within same object (fixup may override)
 					bt_ofs = int(match.group(1), 16)								# assume offset is correct (fixup may override)
@@ -1645,7 +1652,7 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 					continue														# branch was handled
 
 				# Reference branch (i.e. indirect branch via memory reference)
-				match = re.match("^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?0x[0-9a-fA-F]+$", asm["arguments"].strip())
+				match = re.match(r"^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?0x[0-9a-fA-F]+$", asm["arguments"].strip())
 				if (match):
 					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
 					if (len(fixups) == 0):
@@ -1703,7 +1710,7 @@ def trace_execution_flow(wdump, objects, start_obj, start_ofs, fusrc_map, objdum
 				#   but only fixups associated with them; not a problem per se as fixups are what we're looking for, but
 				#   should we at least check for and report differences?
 				# - code needs to be thoroughly checked and verified
-				match = re.match("^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?\[.+0x[0-9a-fA-F]+\]$", asm["arguments"].strip())
+				match = re.match(r"^DWORD PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?\[.+0x[0-9a-fA-F]+\]$", asm["arguments"].strip())
 				if (match):
 					logging.debug("  Possible branch table reference: %s" % line)	# check if there is a fixup associated with the offset that points to the table
 					fixups = get_fixups_for_offset(fusrc_map, block["object"], asm["offset"], asm["offset"] + len(asm["data"]), True)
@@ -2036,7 +2043,7 @@ def check_data_map_consistency(object_num, data_map):
 
 
 # Disassemble objects
-def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
+def disassemble_objects_gen2(wdump, fixrel, objdump_exec, outfile_template):
 	logging.info("")
 	logging.info("Disassembling objects:")
 
@@ -2397,7 +2404,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 				continue
 			if (asm["command"] != "call" and not asm["command"].startswith("j") and not asm["command"].startswith("loop")):		# only call, jump and loop commands
 				continue
-			match = re.match("^0x([0-9a-fA-F]+)$", asm["arguments"].strip())		# only those with direct/constant address/offset
+			match = re.match(r"^0x([0-9a-fA-F]+)$", asm["arguments"].strip())		# only those with direct/constant address/offset
 			if (match == None):
 				#logging.warning("Failed to match offset: line %d: %s" % (i+1, line))
 				continue
@@ -2480,8 +2487,8 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 					continue
 
 				# This explicitely tells us the access size of the reference
-				#match = re.search("([A-Z]+) PTR (?:[a-z]+:)?0x%x" % fixup["target offset"], asm["arguments"])
-				match = re.search("([A-Z]+) PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])
+				#match = re.search(r"([A-Z]+) PTR (?:[a-z]+:)?0x%x" % fixup["target offset"], asm["arguments"])
+				match = re.search(r"([A-Z]+) PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])
 				if (match):
 					access_size = match.group(1)
 					#logging.debug("Explicit (direct address): 0x%x == %s: %s" % (fixup["target offset"], access_size, line))
@@ -2490,8 +2497,8 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 				# in most cases) is accessed with a certain size -> with high probability,
 				# this tells us that the reference holds a *table* of access_size items
 				if (access_size == None):
-					#match = re.search("([A-Z]+) PTR (?:[a-z]+:)?\[.+0x%x\]" % fixup["target offset"], asm["arguments"])
-					match = re.search("([A-Z]+) PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?\[.+0x%x\]" % fixup["target offset"], asm["arguments"])
+					#match = re.search(r"([A-Z]+) PTR (?:[a-z]+:)?\[.+0x%x\]" % fixup["target offset"], asm["arguments"])
+					match = re.search(r"([A-Z]+) PTR (?:cs:|ds:|es:|fs:|gs:|ss:)?\[.+0x%x\]" % fixup["target offset"], asm["arguments"])
 					if (match):
 						#access_size = match.group(1)
 						access_size = match.group(1) + "S"
@@ -2504,7 +2511,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 				# just a value, it doesn't tell us anything about the data size of data
 				# at offset '0x24e68'
 				#if (access_size == None and (asm["command"] == "mov" or asm["command"] == "cmp")):
-				#	match = re.search("([A-Z]+) PTR", asm["arguments"])
+				#	match = re.search(r"([A-Z]+) PTR", asm["arguments"])
 				#	if (match):
 				#		access_size = match.group(1)
 				#		logging.debug("Implicit (mov/cmp src/dst PTR): 0x%x == %s: %s" % (fixup["target offset"], access_size, line))
@@ -2529,34 +2536,34 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 
 				# NOTE: prefixed '<reg>:' before offset is MANDATORY here
 				if (access_size == None and (asm["command"] == "mov" or asm["command"] == "cmp")):
-					if (re.search("(eax|ebx|ecx|edx|esp|ebp|esi|edi),(cs:|ds:|es:|fs:|gs:|ss:)0x%x" % fixup["target offset"], asm["arguments"])):
+					if (re.search(r"(eax|ebx|ecx|edx|esp|ebp|esi|edi),(cs:|ds:|es:|fs:|gs:|ss:)0x%x" % fixup["target offset"], asm["arguments"])):
 						access_size = "DWORD"
-					elif (re.search("(cs:|ds:|es:|fs:|gs:|ss:)0x%x,(eax|ebx|ecx|edx|esp|ebp|esi|edi)" % fixup["target offset"], asm["arguments"])):
+					elif (re.search(r"(cs:|ds:|es:|fs:|gs:|ss:)0x%x,(eax|ebx|ecx|edx|esp|ebp|esi|edi)" % fixup["target offset"], asm["arguments"])):
 						access_size = "DWORD"
-					elif (re.search("(ax|bx|cx|dx|sp|bp|si|di),(cs:|ds:|es:|fs:|gs:|ss:)0x%x" % fixup["target offset"], asm["arguments"])):
+					elif (re.search(r"(ax|bx|cx|dx|sp|bp|si|di),(cs:|ds:|es:|fs:|gs:|ss:)0x%x" % fixup["target offset"], asm["arguments"])):
 						access_size = "WORD"
-					elif (re.search("(cs:|ds:|es:|fs:|gs:|ss:)0x%x,(ax|bx|cx|dx|sp|bp|si|di)" % fixup["target offset"], asm["arguments"])):
+					elif (re.search(r"(cs:|ds:|es:|fs:|gs:|ss:)0x%x,(ax|bx|cx|dx|sp|bp|si|di)" % fixup["target offset"], asm["arguments"])):
 						access_size = "WORD"
-					elif (re.search("(al|ah|bl|bh|cl|ch|dl|dh),(cs:|ds:|es:|fs:|gs:|ss:)0x%x" % fixup["target offset"], asm["arguments"])):
+					elif (re.search(r"(al|ah|bl|bh|cl|ch|dl|dh),(cs:|ds:|es:|fs:|gs:|ss:)0x%x" % fixup["target offset"], asm["arguments"])):
 						access_size = "BYTE"
-					elif (re.search("(cs:|ds:|es:|fs:|gs:|ss:)0x%x,(al|ah|bl|bh|cl|ch|dl|dh)" % fixup["target offset"], asm["arguments"])):
+					elif (re.search(r"(cs:|ds:|es:|fs:|gs:|ss:)0x%x,(al|ah|bl|bh|cl|ch|dl|dh)" % fixup["target offset"], asm["arguments"])):
 						access_size = "BYTE"
 					#if (access_size != None):
 					#	logging.debug("Implicit (mov/cmp src/dst reg): 0x%x == %s: %s" % (fixup["target offset"], access_size, line))
 
 				# NOTE: prefixed '<reg>:' before offset is OPTIONAL here
 				#if (access_size == None and (asm["command"] == "mov" or asm["command"] == "cmp")):
-				#	if (re.search("(eax|ebx|ecx|edx|esp|ebp|esi|edi),(cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])):
+				#	if (re.search(r"(eax|ebx|ecx|edx|esp|ebp|esi|edi),(cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])):
 				#		access_size = "DWORD"
-				#	elif (re.search("(cs:|ds:|es:|fs:|gs:|ss:)?0x%x,(eax|ebx|ecx|edx|esp|ebp|esi|edi)" % fixup["target offset"], asm["arguments"])):
+				#	elif (re.search(r"(cs:|ds:|es:|fs:|gs:|ss:)?0x%x,(eax|ebx|ecx|edx|esp|ebp|esi|edi)" % fixup["target offset"], asm["arguments"])):
 				#		access_size = "DWORD"
-				#	elif (re.search("(ax|bx|cx|dx|sp|bp|si|di),(cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])):
+				#	elif (re.search(r"(ax|bx|cx|dx|sp|bp|si|di),(cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])):
 				#		access_size = "WORD"
-				#	elif (re.search("(cs:|ds:|es:|fs:|gs:|ss:)?0x%x,(ax|bx|cx|dx|sp|bp|si|di)" % fixup["target offset"], asm["arguments"])):
+				#	elif (re.search(r"(cs:|ds:|es:|fs:|gs:|ss:)?0x%x,(ax|bx|cx|dx|sp|bp|si|di)" % fixup["target offset"], asm["arguments"])):
 				#		access_size = "WORD"
-				#	elif (re.search("(al|ah|bl|bh|cl|ch|dl|dh),(cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])):
+				#	elif (re.search(r"(al|ah|bl|bh|cl|ch|dl|dh),(cs:|ds:|es:|fs:|gs:|ss:)?0x%x" % fixup["target offset"], asm["arguments"])):
 				#		access_size = "BYTE"
-				#	elif (re.search("(cs:|ds:|es:|fs:|gs:|ss:)?0x%x,(al|ah|bl|bh|cl|ch|dl|dh)" % fixup["target offset"], asm["arguments"])):
+				#	elif (re.search(r"(cs:|ds:|es:|fs:|gs:|ss:)?0x%x,(al|ah|bl|bh|cl|ch|dl|dh)" % fixup["target offset"], asm["arguments"])):
 				#		access_size = "BYTE"
 				#	#if (access_size != None):
 				#	#	logging.debug("Implicit (mov/cmp src/dst reg): 0x%x == %s: %s" % (fixup["target offset"], access_size, line))
@@ -2931,11 +2938,10 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 					elif ("TBYTE" in sitem["access sizes"] or "TBYTES" in sitem["access sizes"]):
 						mode = "tbytes"
 					else:
-						logging.error("Failed to interpret access size: %s" % (str(sitem["access sizes"])))
+						logging.error("Failed to determine smallest access size: %s" % (str(sitem["access sizes"])))
 						mode = "default"
 				else:
-					#mode = "default"
-					mode = "auto-strings"
+					mode = "default"
 
 			try:
 				insert_data_map_item(object["data map"], OrderedDict([("start", sitem["start"]), ("end", sitem["end"]), ("type", type_), ("mode", mode), ("source", "structure")]))
@@ -3010,11 +3016,12 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		generate_formatted_disassembly(object, disasm["globals"], fixrel)
 
 
-	# Deduplicate formatted disassembly
+	# Deduplicate data definitions in formatted disassembly
+	#
 	# NOTE: We do this here (and string-based rather than data-based) as it
 	#       turned out to be the much easier approach:
 	#
-	#       First try was data-based in generate_data_disassembly()); however,
+	#       First try was data-based in generate_data_disassembly(); however,
 	#       data-based deduplication caused issues with labels being misplaced
 	#       afterwards (due to data being label-agnostic; would have required
 	#       additional object hints to fix), also would have required extending
@@ -3027,44 +3034,125 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 	#       this case); non-data lines (e.g. empty lines, comments, labels)
 	#       interrupt deduplication (e.g. MK1, object 2, offsets 0x4527c, 0x
 	#       45280 and 0x45284 -> same data, but NOT deduplicated due to non-
-	#       data lines interrupting in between)
-	logging.info("")
-	logging.info("Deduplicating formatted disassembly for all objects:")
+	#       data lines interrupting in between, which is how it should be)
+	#
+	# CAUTION: Deduplication disturbs the lines ranges of formatted disassembly
+	#          used to split it into separate files (i.e. reconstructed source
+	#          files). Thus, the original unformatted disassembly (i.e. non-
+	#          deduplicated) MUST ALWAYS BE PRESERVED!
+	#
+	#logging.info("")
+	#logging.info("Deduplicating formatted disassembly for all objects:")
 
 	def generate_dup_line(line, asm, count):
-		# If we got duplicates, generate 'dx <count> dup(<value>)' line; if not, simply
-		# copy stored/tracked line as-is (below if clause)
+		# If we got duplicates, generate 'dx <count> dup(<value>)' line; if not,
+		# simply copy stored/tracked line as-is (below if clause)
 		if (count > 1):
 			# NOTE: correct hex data is not actually important at this stage, but
 			#       still nice to have nonetheless (same as trailing comment)
-			hex_str = str.join(" ", [ "%02x" % value for value in (asm["data"] * count) ])
+			# NOTE: prevent very long lines by truncating hex display + appending
+			#       '..', e.g. '25bf8:  00 00 00 00 00 00 ..  db 1152 dup(0x00)'
+			#       -> way easier to read without losing any relevant information
+			#hex_str = str.join(" ", [ "%02x" % value for value in (asm["data"] * count) ])
+			hex_data = asm["data"] * count
+			if (len(hex_data) > 6):
+				hex_str = str.join(" ", [ "%02x" % value for value in hex_data[:6] ]) + " .."
+			else:
+				hex_str = str.join(" ", [ "%02x" % value for value in hex_data ])
 			line = "%8x:\t%-20s \t%-6s %s" % (asm["offset"], hex_str, asm["command"], "%d dup(%s)" % (count, asm["arguments"]))
 			if (asm["comment"] != None and asm["comment"] != ""):
-				# Using this instead of '%-100s%s' to ensure spacing between command/arguments
-				# and comments for very long lines
-				line = "%-95s     %s" % (line, asm["comment"])
+				# Using this instead of usual '%-100s%s' to ensure spacing between
+				# command/arguments and comments for very long lines
+				#line = "%-95s     %s" % (line, asm["comment"])
+				line = "%-100s%s" % (line, asm["comment"])
 		return line
 
 	#for object in []:		# may be used to disable deduplication for testing
-	for object in disasm["objects"]:
-		logging.debug("Deduplicating formatted disassembly of object %d..." % object["num"])
-		disassembly = []
+	#for object in disasm["objects"]:
+	#	logging.debug("Deduplicating formatted disassembly of object %d..." % object["num"])
+	#	disassembly = []
+	#	dup_line = ""		# storage to track (potential) duplicates
+	#	dup_asm = OrderedDict()
+	#	dup_count = 0
+	#	#lines_saved = 0	# may be used to verify deduplication: len(deduplicated_disassembly) + lines_saved == len(original_disassembly)
+	#	for i in range(0, len(object["disasm formatted"])):
+	#		line = object["disasm formatted"][i]
+	#
+	#		# Empty lines, comment lines, label lines, label + comment(s) lines
+	#		# NOTE: labels can actually contain weird characters (e.g. '$', '?', '@', '.'
+	#		#       and braces in PACMANVR.EXE), so just regex for non-space and be done
+	#		#       with it
+	#		#if (not (line == "" or line.startswith(";") or re.match(r"^[a-zA-Z0-9_]+:(?:[ ]+;.+)?$", line))):
+	#		if (not (line == "" or line.startswith(";") or re.match(r"^[^ ]+:(?:[ ]+;.+)?$", line))):
+	#			asm = split_asm_line(line)
+	#			if (asm != None):
+	#				# We only want to track and deduplicate data definitions
+	#				if (asm["command"] in ("db", "dw", "dd", "df", "dq", "dt")):
+	#					# Currently tracking duplicates? If so, see below; If not, initialize
+	#					# duplicates tracking to current line and continue (below if clause)
+	#					if (dup_count > 0):
+	#						# Check if current line matches stored duplicates line; if it does, increase
+	#						# duplicates counter and continue; if it does not, dump duplicates, reset
+	#						# duplicates tracking to current line and continue (below if clause)
+	#						if (asm["data"] == dup_asm["data"] and asm["command"] == dup_asm["command"] and asm["arguments"] == dup_asm["arguments"] and asm["comment"] == dup_asm["comment"]): # everything except indent and offset must match for a line to be considered a duplicate of the previous line
+	#							dup_count += 1
+	#							#lines_saved += 1
+	#							continue
+	#						else:
+	#							disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+	#					dup_line = line
+	#					dup_asm = asm
+	#					dup_count = 1
+	#					continue
+	#			else:
+	#				# Should never happen (bug if it does)
+	#				logging.warning("Invalid assembly line: line %d: '%s'" % (i+1, line))
+	#
+	#		# Currently tracking duplicates? If so, dump duplicates, disable duplicates
+	#		# tracking (as current line is non-data line) and copy current disassembly
+	#		# line as-is
+	#		if (dup_count > 0):
+	#			disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+	#			dup_line = ""
+	#			dup_asm = OrderedDict()
+	#			dup_count = 0
+	#		disassembly.append(line)
+	#
+	#	# If duplicates were tracked until the end of the for loop, dump them now
+	#	if (dup_count > 0):
+	#		disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+	#
+	#	# Deduplication complete, log and store results
+	#	#logging.debug("Size reduction: %d lines, %d bytes -> %d lines, %d bytes (%d lines saved)" % (len(object["disasm formatted"]), len(str.join(os.linesep, object["disasm formatted"])), len(disassembly), len(str.join(os.linesep, disassembly)), lines_saved))
+	#	lines_before = len(object["disasm formatted"])
+	#	bytes_before = len(str.join(os.linesep, object["disasm formatted"]))
+	#	lines_after = len(disassembly)
+	#	bytes_after = len(str.join(os.linesep, disassembly))
+	#	#logging.debug("Size reduction: %d lines (%.02f%%), %d bytes (%.02f%%) -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, 100.00, bytes_before, 100.00, lines_after, lines_after / lines_before * 100, bytes_after, bytes_after / bytes_before * 100))
+	#	logging.debug("Size reduction: %d lines, %d bytes -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, bytes_before, lines_after, lines_after / lines_before * 100, bytes_after, bytes_after / bytes_before * 100))
+	#	object["disasm formatted"] = disassembly
+
+	# NOTE: Same as above, but turned into a function that can ALSO be used for
+	#       other kinds of formatted disassembly (i.e. for the slices that are
+	#       written to reconstructed source files below)
+	def deduplicate_formatted_disassembly(disasm_formatted):
+		disasm_deduped = []
 		dup_line = ""		# storage to track (potential) duplicates
 		dup_asm = OrderedDict()
 		dup_count = 0
 		#lines_saved = 0	# may be used to verify deduplication: len(deduplicated_disassembly) + lines_saved == len(original_disassembly)
-		for i in range(0, len(object["disasm formatted"])):
-			line = object["disasm formatted"][i]
+		for i in range(0, len(disasm_formatted)):
+			line = disasm_formatted[i]
 
 			# Empty lines, comment lines, label lines, label + comment(s) lines
 			# NOTE: labels can actually contain weird characters (e.g. '$', '?', '@', '.'
 			#       and braces in PACMANVR.EXE), so just regex for non-space and be done
 			#       with it
-			#if (not (line == "" or line.startswith(";") or re.match("^[a-zA-Z0-9_]+:(?:[ ]+;.+)?$", line))):
-			if (not (line == "" or line.startswith(";") or re.match("^[^ ]+:(?:[ ]+;.+)?$", line))):
+			#if (not (line == "" or line.startswith(";") or re.match(r"^[a-zA-Z0-9_]+:(?:[ ]+;.+)?$", line))):
+			if (not (line == "" or line.startswith(";") or re.match(r"^[^ ]+:(?:[ ]+;.+)?$", line))):
 				asm = split_asm_line(line)
 				if (asm != None):
-					# We only want to track and deduplicate these kind of lines (i.e. data definitions)
+					# We only want to track and deduplicate data definitions
 					if (asm["command"] in ("db", "dw", "dd", "df", "dq", "dt")):
 						# Currently tracking duplicates? If so, see below; If not, initialize
 						# duplicates tracking to current line and continue (below if clause)
@@ -3077,7 +3165,7 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 								#lines_saved += 1
 								continue
 							else:
-								disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+								disasm_deduped.append(generate_dup_line(dup_line, dup_asm, dup_count))
 						dup_line = line
 						dup_asm = asm
 						dup_count = 1
@@ -3090,36 +3178,56 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 			# tracking (as current line is non-data line) and copy current disassembly
 			# line as-is
 			if (dup_count > 0):
-				disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+				disasm_deduped.append(generate_dup_line(dup_line, dup_asm, dup_count))
 				dup_line = ""
 				dup_asm = OrderedDict()
 				dup_count = 0
-			disassembly.append(line)
+			disasm_deduped.append(line)
 
 		# If duplicates were tracked until the end of the for loop, dump them now
 		if (dup_count > 0):
-			disassembly.append(generate_dup_line(dup_line, dup_asm, dup_count))
+			disasm_deduped.append(generate_dup_line(dup_line, dup_asm, dup_count))
 
-		# Deduplication complete, log and store results
-		#logging.debug("Size reduction: %d lines, %d bytes -> %d lines, %d bytes (%d lines saved)" % (len(object["disasm formatted"]), len(str.join(os.linesep, object["disasm formatted"])), len(disassembly), len(str.join(os.linesep, disassembly)), lines_saved))
-		logging.debug("Size reduction: %d lines, %d bytes -> %d lines, %d bytes" % (len(object["disasm formatted"]), len(str.join(os.linesep, object["disasm formatted"])), len(disassembly), len(str.join(os.linesep, disassembly))))
-		object["disasm formatted"] = disassembly
+		# Deduplication complete, calculated stats
+		# NOTE: MOVED this to loop that processes objects, placed right before
+		#       writing results to files
+		##logging.debug("Size reduction: %d lines, %d bytes -> %d lines, %d bytes (%d lines saved)" % (len(disasm_formatted), len(str.join(os.linesep, disasm_formatted)), len(disasm_deduped), len(str.join(os.linesep, disasm_deduped)), lines_saved))
+		#lines_before = len(disasm_formatted)
+		#bytes_before = len(str.join(os.linesep, disasm_formatted))
+		#lines_after = len(disasm_deduped)
+		#bytes_after = len(str.join(os.linesep, disasm_deduped))
+		##logging.debug("Size reduction: %d lines (%.02f%%), %d bytes (%.02f%%) -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, 100.00, bytes_before, 100.00, lines_after, lines_after / lines_before * 100, bytes_after, bytes_after / bytes_before * 100))
+		##logging.debug("Size reduction: %d lines, %d bytes -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, bytes_before, lines_after, lines_after / lines_before * 100, bytes_after, bytes_after / bytes_before * 100))
+		##logging.debug("Size reduction: %d lines (%.02f%%), %d bytes (%.02f%%) -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, 100.00, bytes_before, 100.00, lines_after, (lines_after / lines_before * 100) if (lines_before > 0) else 0, bytes_after, (bytes_after / bytes_before * 100) if (bytes_before > 0) else 0))
+		#logging.debug("Size reduction: %d lines, %d bytes -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, bytes_before, lines_after, (lines_after / lines_before * 100) if (lines_before > 0) else 0, bytes_after, (bytes_after / bytes_before * 100) if (bytes_before > 0) else 0))
+
+		# Return results (i.e. deduplicated disassembly)
+		return disasm_deduped
 
 
 	# Generate hints for assumed data portions of code objects
 	#
 	# This stems from the observation that data regions in code objects almost
-	# always have access sizes assigned to them (which are discovered during
+	# always have ACCESS SIZES assigned to them (which are discovered during
 	# step 'Analyzing access sizes...'), while actual code regions have not
 	# -> this works surprisingly well, BUT output needs to be used iteratively,
-	#    i.e. use first output set, apply, run again, use next output set, ...,
+	#    i.e. use first output set, apply, run again, use next output set, etc.
 	#    until results stabilize; this is due to sizing of items based on re-
 	#    ferences that come from analyzing bad code/data
 	# -> not sure if this can ever be a 'real' feature due to the manual work
 	#    required to make use of the output, but it's certainly helpful
+	#
 	# TODO:
 	# - add support for multiple access sizes (i.e. len(sitem["access sizes"])
-	#   != 1) by using the smallest access size present in the set
+	#   > 1) by choosing the SMALLEST access size present in the list
+	# - test what happens if LARGEST access size present in list is chosen in-
+	#   stead (could there even be some benefits?); for this appproach, the
+	#   largest possible access size needs to fit in between sitem["start"] and
+	#   sitem["end"], e.g. obviously can't use DWORDS if end-start == 2 (e.g.
+	#   MK1.EXE, object 2, label 'A2' @0x24b40 -> only 2 bytes to next label)
+	# -> implemented, needs testing (make sure to test this WITHOUT specifying
+	#    hints, i.e. without an existing hint file)
+	#
 	logging.info("")
 	logging.info("Possible object hints for code objects:")
 	for object in [ item for item in disasm["objects"] if (item["type"] == "code") ]:
@@ -3134,12 +3242,64 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 
 		hint_count = 0
 		for sitem in object["disasm structure"]:
-			if (sitem["start"] != None and sitem["end"] != None and "access sizes" in sitem and len(sitem["access sizes"]) == 1):
-				temp = sitem["access sizes"][0]
-				if (not temp.endswith("S")):
-					temp += "S"
-				mode = temp.lower()
-				comment = temp
+
+			# Original solution: only single access size supported (items with multiple
+			# access sizes are skipped)
+			#if (sitem["start"] != None and sitem["end"] != None and "access sizes" in sitem and len(sitem["access sizes"]) == 1):
+			#	temp = sitem["access sizes"][0]
+			#	if (not temp.endswith("S")):
+			#		temp += "S"
+			#	mode = temp.lower()
+			#	comment = temp
+
+			# Support for multiple access sizes (smallest one present is chosen)
+			#if (sitem["start"] != None and sitem["end"] != None and "access sizes" in sitem and len(sitem["access sizes"]) > 0):
+			#	if ("BYTE" in sitem["access sizes"] or "BYTES" in sitem["access sizes"]):
+			#		mode = "bytes"
+			#		comment = "BYTES"
+			#	elif ("WORD" in sitem["access sizes"] or "WORDS" in sitem["access sizes"]):
+			#		mode = "words"
+			#		comment = "WORDS"
+			#	elif ("DWORD" in sitem["access sizes"] or "DWORDS" in sitem["access sizes"]):
+			#		mode = "dwords"
+			#		comment = "DWORDS"
+			#	elif ("FWORD" in sitem["access sizes"] or "FWORDS" in sitem["access sizes"]):
+			#		mode = "fwords"
+			#		comment = "FWORDS"
+			#	elif ("QWORD" in sitem["access sizes"] or "QWORDS" in sitem["access sizes"]):
+			#		mode = "qwords"
+			#		comment = "QWORDS"
+			#	elif ("TBYTE" in sitem["access sizes"] or "TBYTES" in sitem["access sizes"]):
+			#		mode = "tbytes"
+			#		comment = "TBYTES"
+			#	else:
+			#		logging.error("Failed to determine smallest access size: %s" % (str(sitem["access sizes"])))
+			#		continue
+
+			# Support for multiple access sizes (largest one present is chosen)
+			if (sitem["start"] != None and sitem["end"] != None and sitem["length"] != None and "access sizes" in sitem and len(sitem["access sizes"]) > 0):
+				if (sitem["length"] >= 10 and ("TBYTE" in sitem["access sizes"] or "TBYTES" in sitem["access sizes"])):
+					mode = "tbytes"
+					comment = "TBYTES"
+				elif (sitem["length"] >= 8 and ("QWORD" in sitem["access sizes"] or "QWORDS" in sitem["access sizes"])):
+					mode = "qwords"
+					comment = "QWORDS"
+				elif (sitem["length"] >= 6 and ("FWORD" in sitem["access sizes"] or "FWORDS" in sitem["access sizes"])):
+					mode = "fwords"
+					comment = "FWORDS"
+				elif (sitem["length"] >= 4 and ("DWORD" in sitem["access sizes"] or "DWORDS" in sitem["access sizes"])):
+					mode = "dwords"
+					comment = "DWORDS"
+				elif (sitem["length"] >= 2 and ("WORD" in sitem["access sizes"] or "WORDS" in sitem["access sizes"])):
+					mode = "words"
+					comment = "WORDS"
+				elif (sitem["length"] >= 1 and ("BYTE" in sitem["access sizes"] or "BYTES" in sitem["access sizes"])):
+					mode = "bytes"
+					comment = "BYTES"
+				else:
+					logging.error("Failed to determine largest access size: start: 0x%x, end: 0x%x, length: %d, access sizes: %s" % (sitem["start"], sitem["end"], sitem["length"], str(sitem["access sizes"])))
+					continue
+
 				if ((sitem["start"], sitem["end"], sitem["length"], "data", mode) in hint_map_dupes): # skip exact duplicates
 					continue
 				if ((sitem["start"], "data") in hint_map_similar): # reuse hint index for similar hints
@@ -3151,6 +3311,24 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 
 		if (hint_count == 0):
 			logging.debug("<none>")
+
+
+	# Deduplicate formatted disassembly of all objects
+	# NOTE: result (i.e. deduplicated formatted disassembly) is stored SEPARATELY
+	#       to NOT disturb splitting into separate files (i.e. reconstructed source
+	#       files) below, which relies on NON-DEDUPLICATED formatted disassembly)
+	logging.info("")
+	logging.info("Deduplicating formatted disassembly of all objects:")
+	for object in disasm["objects"]:
+		logging.debug("Processing object %d..." % object["num"])
+		object["disasm formatted deduped"] = deduplicate_formatted_disassembly(object["disasm formatted"])
+		lines_before = len(object["disasm formatted"])
+		bytes_before = len(str.join(os.linesep, object["disasm formatted"]))
+		lines_after = len(object["disasm formatted deduped"])
+		bytes_after = len(str.join(os.linesep, object["disasm formatted deduped"]))
+		lines_perc = (lines_after / lines_before * 100) if (lines_before > 0) else 100.0
+		bytes_perc = (bytes_after / bytes_before * 100) if (bytes_before > 0) else 100.0
+		logging.debug("Result: %d lines, %d bytes -> %d lines (%.02f%%), %d bytes (%.02f%%)" % (lines_before, bytes_before, lines_after, lines_perc, bytes_after, bytes_perc))
 
 
 	# Write results to files
@@ -3169,16 +3347,19 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		write_file(outfile_template % "disasm_object_%d_disassembly_structure.txt" % object["num"], format_pprint(object["disasm structure"]))
 		write_file(outfile_template % "disasm_object_%d_disassembly_plain.asm" % object["num"], object["disasm plain"])
 		write_file(outfile_template % "disasm_object_%d_disassembly_formatted.asm" % object["num"], object["disasm formatted"])
+		write_file(outfile_template % "disasm_object_%d_disassembly_formatted_deduplicated.asm" % object["num"], object["disasm formatted deduped"])
 		write_file(outfile_template % "disasm_object_%d_disassembly_data_map.txt" % object["num"], format_pprint(object["data map"]))
 		files_written += 5
 	logging.debug ("Wrote %d files" % files_written)
 
 
-	# Split formatted disassembly into separate files
+	# Split formatted disassembly into separate files (based on module
+	# information, attempts to reconstruct original source files)
 	# NOTE: relies on module maps being generated by generate_formatted_disassembly()
 	# TODO: use os.path.join() to generate paths instead of using os.path.sep
 	logging.info("")
 	logging.info("Splitting formatted disassembly into separate files:")
+	#logging.info("(based on module information, attempts to reconstruct original source files)")
 	output_library = []
 	modules_separate = 0
 	modules_library = 0
@@ -3200,9 +3381,12 @@ def disassemble_objects(wdump, fixrel, objdump_exec, outfile_template):
 		if (not file_name.lower().endswith(".asm")):
 			file_name += ".asm"
 		#logging.debug("File '%s'..." % file_name)
+		output_module = deduplicate_formatted_disassembly(output_module)
 		#write_file(outfile_template % "modules/%s" % file_name, output_module)
 		write_file(outfile_template % ("modules" + os.path.sep + file_name), output_module)
 		modules_separate += 1
+	#logging.debug("File '%s'..." % "library.asm"))
+	output_library = deduplicate_formatted_disassembly(output_library)
 	#write_file(outfile_template % "modules/library.asm", output_library)
 	write_file(outfile_template % ("modules" + os.path.sep + "library.asm"), output_library)
 	logging.debug("Wrote %d modules to separate files" % modules_separate)

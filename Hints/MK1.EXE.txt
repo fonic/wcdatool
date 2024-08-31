@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------------------
 #                                                                            -
 #  Created by Fonic <https://github.com/fonic>                               -
-#  Date: 06/20/19 - 04/06/22                                                 -
+#  Date: 06/20/19 - 08/31/24                                                 -
 #                                                                            -
 # ----------------------------------------------------------------------------
 
@@ -361,4 +361,34 @@ Object 2:
 #3) offset = 0000D902H, length = 00000096H, type = data, mode = bytes, comment = Default highscore table; structure: 3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score (?)
 3) offset = 0000D902H, length = 00000096H, type = data, mode = struct:chars[3]:bytes[3]:dword, comment = Default highscore table (3 chars initials, 1 byte wins, 1 byte wins, 0, 4 bytes score) (?)
 4) offset = 0000E7A4H, length = 00000138H, type = data, mode = strings, comment = List of strings for keyboard keys
-5) start = 00024B40H, end = 00024BA0H, type = data, mode = comment, comment = Emulation of registers A0-A14 / B0-B14 of original arcade machine
+5) start = 00024B40H, end = 00024BA0H, type = data, mode = comment, comment = Emulation of registers A0-A14 / B0-B14 of original arcade machine's architecture (TMS34010)
+
+
+                           Global Info (section 1)
+==============================================================================
+
+#
+# MK1.EXE seems to contain significantly less named labels in its debug info
+# (likely limited to exported symbols only, i.e. code blocks that are called
+# from other modules and thus need to be exported) compared to MK2.EXE. As a
+# result, there are functions like 'WHO_IS_ALONE' which run a lot longer than
+# they should and actually span over other, unnamed functions (for which there
+# are no named symbols available in debug info).
+#
+# Note that this is just a stub for demonstration, there are likely many more
+# missing symbols + long functions that require splitting. Since MK1 and MK2
+# are quite similar (MK2 seems to have used and expanded on MK1's code base),
+# a thorough comparison might help reveal further missing symbols.
+#
+# For details, refer to:
+# https://github.com/fonic/wcdatool/issues/15#issuecomment-2308410432
+#
+
+Name:  GAME_FINISHED
+  address      = 0001:0000ca2e
+  module index = 12
+  kind:          (code)
+Name:  GAME_OVER
+  address      = 0001:0000cb9e
+  module index = 12
+  kind:          (code)

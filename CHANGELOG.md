@@ -1,3 +1,13 @@
+## Changelog for v3.3 release
+
+- fixed regression regarding *deduplication of consecutive data lines* (added in v3.2) messing up disassembly split into separate files (i.e. reconstructed source files) (fixes issue #16)
+- prevent very long lines when deduplicating consecutive data lines by truncating hex output/display + appending '..'
+- added support for regions with multiple access sizes when generating/outputting possible hints for code objects
+- extended pretty printer (`modules/module_pretty_print.py`) to produce hex dumps of bytes and other bytes-like objects
+- extended file writer (`module_miscellaneous.py`) to create folders for destination path if missing
+- fixed regex strings in `re.match` and `re.search` calls producing `SyntaxWarning`s with Python 3.12+ due to invalid escape sequences (https://stackoverflow.com/a/52335971/1976617)
+- applied various minor changes (console output, code formatting, comments, etc.)
+
 ## Changelog for v3.2 release
 
 - added algorithm to *deduplicate consecutive data lines* in formatted disassembly (*greatly* reduces disassembly size for data objects)
@@ -38,3 +48,7 @@
 - initial release
 - monolithic (everything in one single source file)
 - originally named 'wcdctool' (*Watcom Decompilation Tool*)
+
+##
+
+_Last updated: 08/31/24_

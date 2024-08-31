@@ -7,7 +7,7 @@
 #  Module Miscellaneous                                                   -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 07/19/23                                              -
+#  Date: 06/20/19 - 07/28/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@
 #                                     -
 # -------------------------------------
 
-# - nothing atm
+# - Check if text file output is actually correct on Windows (line endings)
 
 
 # -------------------------------------
@@ -37,6 +37,7 @@ __all__ = [ "write_file", "dict_path_exists", "dict_path_value" ]
 # -------------------------------------
 
 import os
+#import logging
 
 
 # -------------------------------------
@@ -48,18 +49,24 @@ import os
 # Write content to file
 # Accepted content: string, bytes, list of strings, list of bytes
 def write_file(path, content, *, strings_separator=os.linesep, bytes_separator=b""):
-	dir = os.path.dirname(path)
 	try:
-		if (dir != ""):
-			os.makedirs(dir, exist_ok=True)
+		basename = os.path.basename(path)
+		dirname = os.path.dirname(path)
+		if (dirname != ""):
+			#logging.debug("Creating directories for path '%s'..." % dirname)
+			os.makedirs(dirname, exist_ok=True)
 		if (isinstance(content, tuple) or isinstance(content, list)):
 			if (len(content) > 0):
 				if (isinstance(content[0], str)):
 					with open(path, "wt") as file:
-						file.write(str.join(strings_separator, content))
+						content = str.join(strings_separator, content)
+						#logging.debug("Writing file '%s' (%d bytes)..." % (basename, len(content)))
+						file.write(content)
 				elif (isinstance(content[0], bytes)):
 					with open(path, "wb") as file:
-						file.write(bytes.join(bytes_separator, content))
+						content = bytes.join(bytes_separator, content)
+						#logging.debug("Writing file '%s' (%d bytes)..." % (basename, len(content)))
+						file.write(content)
 				else:
 					raise TypeError("content has invalid type: '%s'" % type(content).__name__)
 			else:
@@ -67,9 +74,11 @@ def write_file(path, content, *, strings_separator=os.linesep, bytes_separator=b
 					pass
 		elif (isinstance(content, str)):
 			with open(path, "wt") as file:
+				#logging.debug("Writing file '%s' (%d bytes)..." % (basename, len(content)))
 				file.write(content)
 		elif (isinstance(content, bytes)):
 			with open(path, "wb") as file:
+				#logging.debug("Writing file '%s' (%d bytes)..." % (basename, len(content)))
 				file.write(content)
 		else:
 			raise TypeError("content has invalid type: '%s'" % type(content).__name__)

@@ -6,7 +6,7 @@
 #  Watcom Disassembly Tool (wcdatool)                                     -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 07/21/23                                              -
+#  Date: 06/20/19 - 07/29/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -17,7 +17,9 @@
 #                                     -
 # -------------------------------------
 
-# - Create output directory when missing
+# - Create output directory when missing -> see 'write_file()' in 'module_
+#   miscellaneous.py'
+#
 # - Move code for executable file splitting into functions and/or a separate
 #   module
 
@@ -41,15 +43,14 @@ try:
 	from modules.module_miscellaneous import *
 	from modules.main_wdump import *
 	from modules.main_fixup_relocation import *
-	#from modules.main_disassembler_legacy import *
-	from modules.main_disassembler import *
+	from modules.main_disassembler_gen2 import *
 except ImportError as error:
-	sys.stderr.write("Failed to import required module:\n%s\n" % error)
+	sys.stderr.write("Error: failed to import required module:\n%s\n" % error)
 	sys.exit(1)
 
 # Check Python version
 if (sys.version_info < (3, 6, 0)):
-	sys.stderr.write("This script requires Python version 3.6.0 or higher to run.\n")
+	sys.stderr.write("Error: Python >= 3.6.0 is required to run this\n")
 	sys.exit(1)
 
 
@@ -130,9 +131,9 @@ def main():
 	# If ANSI mode is disabled, different log template including message type is
 	# used for console (without this messages would be indistinguishable)
 	# TODO:
-	# Extend setup_logging() to create directory path for log file
+	# Extend set_up_logging() to create directory path for log file
 	try:
-		setup_logging(logger_name=None, console_log_output="stdout", console_log_level="debug", console_log_color=get_ansi_mode(), console_log_template="%(color_on)s%(message)s%(color_off)s" if (get_ansi_mode() == True) else "%(color_on)s%(levelname2)s: %(message)s%(color_off)s", logfile_file=outfile_template % "zzz_log.txt", logfile_log_level="debug", logfile_log_color=False, logfile_log_template="%(color_on)s[%(created)d] [%(levelname)-8s] %(message)s%(color_off)s", logfile_truncate=True)
+		set_up_logging(logger_name=None, console_log_output="stdout", console_log_level="debug", console_log_color=get_ansi_mode(), console_log_template="%(color_on)s%(message)s%(color_off)s" if (get_ansi_mode() == True) else "%(color_on)s%(levelname2)s: %(message)s%(color_off)s", logfile_file=outfile_template % "zzz_log.txt", logfile_log_level="debug", logfile_log_color=False, logfile_log_template="%(color_on)s[%(created)d] [%(levelname)-8s] %(message)s%(color_off)s", logfile_truncate=True)
 	except Exception as exception:
 		sys.stderr.write("Error: failed to set up logging: %s\n" % str(exception))
 		#sys.exit(1)
@@ -151,13 +152,13 @@ def main():
 	if (wdump == None):
 		return 1
 
-	# Detect and extract DOS/4G(W) stub / payload
+	# Detect and extract DOS/4G(W) stub and payload
 	# NOTE: this is necessary as wdump will only yield usable results for the payload
 	# TODO: would it make sense to put this in a module? -> 'modules/main_splitter.py'
 	if (dict_path_exists(wdump, "dos/16m exe header", "data", "offset of possible next spliced .exp")):
 		offset = wdump["dos/16m exe header"]["data"]["offset of possible next spliced .exp"]
 		logging.info("")
-		logging.info("Extracting DOS/4G(W) stub / payload:")
+		logging.info("Extracting DOS/4G(W) stub and payload:")
 		logging.debug("Offset of DOS/4G(W) payload: 0x%x" % offset)
 		try:
 			logging.debug("Opening input file to read data...")
@@ -179,13 +180,13 @@ def main():
 		if (wdump == None):
 			return 1
 
-	# Detect and extract linear executable stub / payload
+	# Detect and extract linear executable stub and payload
 	# NOTE: this is solely to allow further examination of the extracted files, they are not used anywhere in this script
 	# TODO: would it make sense to put this in a module? -> 'modules/main_splitter.py'
 	if (dict_path_exists(wdump, "linear exe header (os/2 v2.x) - le", "data", "file offset")):
 		offset = wdump["linear exe header (os/2 v2.x) - le"]["data"]["file offset"]
 		logging.info("")
-		logging.info("Extracting linear executable stub / payload:")
+		logging.info("Extracting linear executable stub and payload:")
 		logging.debug("Offset of linear executable payload: 0x%x" % offset)
 		try:
 			logging.debug("Opening input file to read data...")
@@ -208,8 +209,7 @@ def main():
 		return 1
 
 	# Disassemble objects
-	#disasm = disassemble_objects(wdump, fixrel, cmd_args.data_object, cmd_args.objdump_exec, outfile_template)
-	disasm = disassemble_objects(wdump, fixrel, cmd_args.objdump_exec, outfile_template)
+	disasm = disassemble_objects_gen2(wdump, fixrel, cmd_args.objdump_exec, outfile_template)
 
 	# Drop to interactive debugger/shell if requested
 	if (cmd_args.ia_debug == True or cmd_args.ia_shell == True):

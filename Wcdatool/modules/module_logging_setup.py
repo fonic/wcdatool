@@ -7,7 +7,7 @@
 #  Module Logging Setup                                                   -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 03/24/22                                              -
+#  Date: 06/20/19 - 07/29/23                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -18,8 +18,8 @@
 #                                     -
 # -------------------------------------
 
-# - Extend 'setup_logging()' to create directory path for logfile -> see code
-#   in 'write_file()', 'module_miscellaneous.py'
+# - Extend 'set_up_logging()' to create directory path for log file
+#   -> see 'write_file()' in 'Wcdatool/modules/module_miscellaneous.py'
 
 
 # -------------------------------------
@@ -28,7 +28,7 @@
 #                                     -
 # -------------------------------------
 
-__all__ = [ "setup_logging" ]
+__all__ = [ "set_up_logging" ]
 
 
 # -------------------------------------
@@ -78,7 +78,7 @@ class LogFormatter(logging.Formatter):
 
 # Setup logging
 # NOTE: logger_name == None -> root logger
-def setup_logging(logger_name=None, console_log_output="stdout", console_log_level="debug", console_log_color=False, console_log_template="%(color_on)s%(levelname2)s: %(message)s%(color_off)s", logfile_file=None, logfile_log_level="debug", logfile_log_color=False, logfile_log_template="%(color_on)s[%(created)d] [%(levelname)-8s] %(message)s%(color_off)s", logfile_truncate=False):
+def set_up_logging(logger_name=None, console_log_output="stdout", console_log_level="debug", console_log_color=False, console_log_template="%(color_on)s%(levelname2)s: %(message)s%(color_off)s", logfile_file=None, logfile_log_level="debug", logfile_log_color=False, logfile_log_template="%(color_on)s[%(created)d] [%(levelname)-8s] %(message)s%(color_off)s", logfile_truncate=False):
 
 	# Create logger
 	logger = logging.getLogger(logger_name)
