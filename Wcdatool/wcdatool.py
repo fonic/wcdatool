@@ -6,7 +6,7 @@
 #  Watcom Disassembly Tool (wcdatool)                                     -
 #                                                                         -
 #  Created by Fonic <https://github.com/fonic>                            -
-#  Date: 06/20/19 - 07/29/23                                              -
+#  Date: 06/20/19 - 10/24/24                                              -
 #                                                                         -
 # -------------------------------------------------------------------------
 
@@ -76,8 +76,8 @@ def main():
 	set_window_title(app_title)
 
 	# Process command line
-	#parser = ArgumentParser(description="Tool to aid disassembling DOS applications created with the Watcom toolchain.", argument_default=argparse.SUPPRESS, allow_abbrev=False, add_help=False)
-	parser = ArgumentParser(description="Tool to aid disassembling DOS applications created with the Watcom toolchain.", allow_abbrev=False, add_help=False)
+	#parser = ArgumentParser(description="Tool to aid disassembling DOS applications created with the Watcom Toolchain.", argument_default=argparse.SUPPRESS, allow_abbrev=False, add_help=False)
+	parser = ArgumentParser(description="Tool to aid disassembling DOS applications created with the Watcom Toolchain.", allow_abbrev=False, add_help=False)
 	parser.add_argument("-wde", "--wdump-exec", action="store", dest="wdump_exec", metavar="PATH", type=str, default="wdump", help="Path to wdump executable")
 	parser.add_argument("-ode", "--objdump-exec", action="store", dest="objdump_exec", metavar="PATH", type=str, default="objdump", help="Path to objdump executable")
 	parser.add_argument("-wdo", "--wdump-output", action="store", dest="wdump_output", metavar="PATH", type=str, help="Path to file containing pre-generated wdump output to read/parse instead of running wdump")
